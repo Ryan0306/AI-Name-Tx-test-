@@ -382,7 +382,7 @@
 
                 const ch=questions[currentQuestionIndex].phonemic_cue; 
 
-                const a=new SpeechSynthesisUtterance("呢個係……");a.lang='zh-HK';a.rate=0.9; 
+                const a=new SpeechSynthesisUtterance("呢個係");a.lang='zh-HK';a.rate=0.9; 
 
                 const b=new SpeechSynthesisUtterance(ch);b.lang='zh-HK';b.rate=0.25; 
 
@@ -398,7 +398,7 @@
 
                 const w=questions[currentQuestionIndex].word; 
 
-                const p1=`呢個係${w}，你試下講一次，`; 
+                const p1=`呢個係${w}，你試下講一次`; 
 
                 const u1=new SpeechSynthesisUtterance(p1);u1.lang='zh-HK';u1.rate=0.9; 
 
@@ -412,7 +412,9 @@
 
            } 
 
-           const utt=new SpeechSynthesisUtterance(text);utt.lang='zh-HK';utt.rate=0.9; 
+           const cleanText = text.replace(/。/g, ''); 
+
+           const utt=new SpeechSynthesisUtterance(cleanText);utt.lang='zh-HK';utt.rate=0.9; 
 
            activeUtterances.push(utt); 
 
@@ -602,7 +604,7 @@
 
            messageElement.textContent=w; 
 
-           speak(`呢個係${w}，你試下講一次，${w}。`,()=>setTimeout(moveToNextQuestion,3000)); 
+           speak(`呢個係${w}，你試下講一次，${w}`,()=>setTimeout(moveToNextQuestion,3000)); 
 
        } 
 
