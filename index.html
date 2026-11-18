@@ -244,6 +244,14 @@
            {word:"西瓜",image:"西瓜.jpg",phonemic_cue:"西",correct_aliases:["西瓜"]}
        ];
 
+       // 隨機撈亂題目次序（Fisher-Yates 洗牌演算法）
+       function shuffleQuestions() {
+           for (let i = questions.length - 1; i > 0; i--) {
+               const j = Math.floor(Math.random() * (i + 1));
+               [questions[i], questions[j]] = [questions[j], questions[i]];
+           }
+       }
+
        // 預先在背景載入所有圖片，避免切換題目時載入緩慢
        const preloadedImages = [];
        function preloadImages() {
@@ -756,6 +764,8 @@
            if(!checkRecognitionSupport()) return;
            unlockSpeechSynthesis();
            requestWakeLock();
+
+           shuffleQuestions(); // 每次開始或重玩都隨機撈亂題目次序
 
            startButton.style.display='none';
            summaryContainer.style.display='none';
