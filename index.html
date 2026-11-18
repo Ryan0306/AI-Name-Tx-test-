@@ -240,14 +240,14 @@
 
        let currentQuestionIndex=0, currentCueLevel=0, recognitionActive=false, timer, listenDelayTimer, correctAnswered=false;
        let isWaitingForAnswer = false;
-       let isRepeatStage = false; // 標記目前是否處於「試下講一次」收音階段
+       let isRepeatStage = false;
        let activeUtterances = [];
        let isSpeakingNow = false;
        let listenStartTime = 0;
        let cueLock = false;
        let speakFallbackTimer = null;
        let preferredVoice = null;
-       let resultsRecord = []; // 記錄每題結果
+       let resultsRecord = [];
 
        // 防止螢幕休眠 (Wake Lock)
        let wakeLock = null;
@@ -290,14 +290,17 @@
        const synth=window.speechSynthesis;
        let recognition=null;
 
-       // 自動尋找 Safari / 系統最自然嘅廣東話語音（例如 Sinji 善怡）
+       // 優先選用「Siri 聲音 2」
        function loadBestCantoneseVoice() {
            if (!synth) return;
            const voices = synth.getVoices();
            const hkVoices = voices.filter(v => v.lang.toLowerCase().includes('zh-hk') || v.lang.toLowerCase().includes('yue'));
            if (hkVoices.length > 0) {
-               // 優先揀增強版/自然人聲 (Sinji / Enhanced / Premium)
-               preferredVoice = hkVoices.find(v => /sinji|enhanced|premium|natural/i.test(v.name)) || hkVoices[0];
+               preferredVoice =
+                   hkVoices.find(v => /siri.*2|聲音\s*2|voice\s*2/i.test(v.name)) ||
+                   hkVoices.find(v => /siri/i.test(v.name)) ||
+                   hkVoices.find(v => /sinji|enhanced|premium|natural/i.test(v.name)) ||
+                   hkVoices[0];
            }
        }
        if (synth && synth.onvoiceschanged !== undefined) {
@@ -352,7 +355,7 @@
                statusBadge.textContent = '🔊 系統發問中...';
                statusBadge.classList.add('status-speaking');
            } else if (state === 'listening') {
-               statusBadge.textContent = isRepeatStage ? '🎤 請跟住講一次...' : '🎤 請講出答案...';
+               statusBadge.textContent = isRepeatStage ? '🎤 請跟住讀一次...' : '🎤 請讀出答案...';
                statusBadge.classList.add('status-listening');
                imageElement.classList.add('listening-highlight');
            } else if (state === 'idle') {
@@ -406,7 +409,6 @@
 
            recognition.onend=()=>{
                recognitionActive=false;
-               // 在作答或仿說階段，如果未完成且未超時，自動重啟收音
                if(isWaitingForAnswer && !correctAnswered && !isSpeakingNow){
                    clearTimeout(listenDelayTimer);
                    listenDelayTimer=setTimeout(()=>{
@@ -423,17 +425,17 @@
            };
        }
 
-       // 輔助函式：建立自然語氣嘅 Utterance
-       function createNaturalUtterance(txt, rate = 0.88, pitch = 1.05) {
+       // 建立自然語氣嘅 Utterance
+       function createNaturalUtterance(txt, rate = 0.88, pitch = 1.02) {
            const u = new SpeechSynthesisUtterance(txt);
            u.lang = 'zh-HK';
            if (preferredVoice) u.voice = preferredVoice;
-           u.rate = rate;   // 稍慢一點更親切清晰，適合長者
-           u.pitch = pitch; // 微微提高音調，減少機械低沉感
+           u.rate = rate;
+           u.pitch = pitch;
            return u;
        }
 
-       // 改良版 speak：按標點分句加入自然呼吸停頓，解決 Safari 讀長句語氣生硬問題
+       // 按標點分句加入自然停頓
        function speak(text, callback){
            clearTimeout(speakFallbackTimer);
            if(!synth){
@@ -469,8 +471,8 @@
                // 1. 音素提示模式
                if(currentCueLevel === 1 && text === ""){
                     const ch = questions[currentQuestionIndex].phonemic_cue;
-                    const a = createNaturalUtterance("提示一下，呢個係", 0.88, 1.05);
-                    const b = createNaturalUtterance(ch, 0.55, 1.02); // 單字清晰拉長但不過度扭曲
+                    const a = createNaturalUtterance("提示一下，呢個係", 0.88, 1.02);
+                    const b = createNaturalUtterance(ch, 0.55, 1.0);
                     activeUtterances.push(a, b);
                     a.onend = () => {
                         setTimeout(() => { if(!finished) synth.speak(b); }, 250);
@@ -495,17 +497,15 @@
                        return;
                    }
                    const seg = segments[idx];
-                   // 如果是最後一題仿說示範的最後一個單字，讀得更清晰
                    const isSingleTargetWord = (isRepeatStage && idx === segments.length - 1);
                    const u = createNaturalUtterance(
                        seg,
                        isSingleTargetWord ? 0.65 : 0.88,
-                       1.05
+                       1.02
                    );
                    activeUtterances.push(u);
                    u.onend = () => {
                        idx++;
-                       // 句與句之間留 260ms 自然停頓
                        setTimeout(speakNextSegment, 260);
                    };
                    synth.speak(u);
@@ -549,7 +549,6 @@
                recognitionActive=false;
                setVisualStatus('idle');
 
-               // 如果係「試下講一次」階段超時未講到
                if (isRepeatStage) {
                    handleRepeatTimeout();
                } else {
@@ -575,25 +574,21 @@
                 cueButton.style.display='none';
 
                 if (isRepeatStage) {
-                    // 錯兩次後「試下講一次」讀啱咗！
                     recordResult(q.word, 'repeat_success');
                     setTimeout(() => handleRepeatCorrect(q.word), 100);
                 } else {
-                    // 靠自己答啱 或 提示後答啱
                     const statusType = (currentCueLevel === 0) ? 'independent' : 'cued';
                     recordResult(q.word, statusType);
                     setTimeout(() => handleCorrectAnswer(q.word), 100);
                 }
            }else{
                 try{ recognition?.abort(); }catch(e){}
-                // 剛開咪 1.2 秒內收到雜音，重新聆聽
                 if(elapsed < 1200){
                     startListening(isRepeatStage ? 8000 : 10000);
                     return;
                 }
 
                 if (isRepeatStage) {
-                    // 仿說階段讀錯，再俾多次機會或鼓勵過關
                     handleRepeatTimeout();
                 } else {
                     setTimeout(moveToNextCue, 1200);
@@ -601,7 +596,6 @@
            }
        }
 
-       // 記錄成績（確保每題只記錄一次）
        function recordResult(word, status) {
            const existing = resultsRecord.find(r => r.word === word);
            if (!existing) {
@@ -617,20 +611,20 @@
            speak(`${praise}！呢個就係${w}`, () => setTimeout(moveToNextQuestion, 900));
        }
 
-       // 「試下講一次」跟讀成功嘅鼓勵回饋
+       // 「試下讀一次」跟讀成功嘅鼓勵回饋
        function handleRepeatCorrect(w){
            currentCueLevel=0;
            isRepeatStage=false;
            messageElement.textContent=w;
            const praise = [
-               `啱喇！講得好清楚，呢個就係${w}`,
+               `啱喇！讀得好清楚，呢個就係${w}`,
                `好叻呀！跟得非常之啱，係${w}`,
                `冇錯！好標準呀，呢個就係${w}`
            ][Math.floor(Math.random()*3)];
            speak(praise, () => setTimeout(moveToNextQuestion, 900));
        }
 
-       // 「試下講一次」超時或未讀清嘅溫柔過渡
+       // 「試下讀一次」超時或未讀清嘅溫柔過渡
        function handleRepeatTimeout(){
            const q = questions[currentQuestionIndex];
            recordResult(q.word, 'repeat_missed');
@@ -656,15 +650,14 @@
            }
        }
 
-       // 錯兩次後進入「試下講一次」並重新收音
+       // 錯兩次後進入「試下讀一次」並重新收音
        function handleFinalAnswer(w){
            clearTimeout(timer);
            clearTimeout(listenDelayTimer);
            isWaitingForAnswer = false;
            isRepeatStage = true;
            messageElement.textContent = w;
-           speak(`呢個係${w}，你試下講一次，${w}`, () => {
-               // 系統讀完之後，開咪收音 8 秒等使用者跟讀
+           speak(`呢個係${w}，你試下讀一次，${w}`, () => {
                startListening(8000);
            });
        }
