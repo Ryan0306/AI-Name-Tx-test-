@@ -16,14 +16,15 @@
            background:#f4f4f9;
        }
        .container{
-           width:90%;
+           width:92%;
            max-width:800px;
            text-align:center;
-           padding:20px;
+           padding:20px 12px;
            display:flex;
            flex-direction:column;
            align-items:center;
            flex-grow:1;
+           box-sizing:border-box;
        }
        h1{color:#333;margin-bottom:12px;font-size:2em;}
 
@@ -76,7 +77,7 @@
        }
 
        #message{
-           font-size:2.1em;
+           font-size: clamp(1.5rem, 5vw, 2.1rem);
            color:#333;
            min-height:65px;
            margin:15px 0;
@@ -99,8 +100,10 @@
        #perm-button{
            background:#ff9800;
            color:#fff;
-           padding:18px 40px;
-           font-size:1.6em;
+           padding: 16px 24px;
+           font-size: clamp(1.15rem, 4.3vw, 1.55rem);
+           white-space: nowrap;
+           max-width: 100%;
            border:none;
            border-radius:12px;
            cursor:pointer;
@@ -113,6 +116,7 @@
            color:#fff;
            padding:18px 46px;
            font-size:1.7em;
+           white-space: nowrap;
            border:none;
            border-radius:12px;
            cursor:pointer;
@@ -132,6 +136,7 @@
            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
            margin: 10px 0 20px 0;
            text-align: left;
+           box-sizing: border-box;
        }
        .summary-header {
            font-size: 1.5em;
@@ -194,6 +199,7 @@
            padding:10px;
            background:#e9ecef;
            border-top:1px solid #ddd;
+           box-sizing:border-box;
        }
        #progress-bar{
            height:38px;
@@ -237,6 +243,16 @@
            {word:"奇異果",image:"奇異果.jpg",phonemic_cue:"奇",correct_aliases:["奇異果","獼猴桃"]},
            {word:"西瓜",image:"西瓜.jpg",phonemic_cue:"西",correct_aliases:["西瓜"]}
        ];
+
+       // 預先在背景載入所有圖片，避免切換題目時載入緩慢
+       const preloadedImages = [];
+       function preloadImages() {
+           questions.forEach(q => {
+               const img = new Image();
+               img.src = q.image;
+               preloadedImages.push(img);
+           });
+       }
 
        let currentQuestionIndex=0, currentCueLevel=0, recognitionActive=false, timer, listenDelayTimer, correctAnswered=false;
        let isWaitingForAnswer = false;
@@ -290,16 +306,15 @@
        const synth=window.speechSynthesis;
        let recognition=null;
 
-       // 優先選用「Siri 聲音 2」
+       // 選取瀏覽器可用的最佳廣東話語音（優先增強版 / Sinji）
        function loadBestCantoneseVoice() {
            if (!synth) return;
            const voices = synth.getVoices();
            const hkVoices = voices.filter(v => v.lang.toLowerCase().includes('zh-hk') || v.lang.toLowerCase().includes('yue'));
            if (hkVoices.length > 0) {
                preferredVoice =
-                   hkVoices.find(v => /siri.*2|聲音\s*2|voice\s*2/i.test(v.name)) ||
-                   hkVoices.find(v => /siri/i.test(v.name)) ||
-                   hkVoices.find(v => /sinji|enhanced|premium|natural/i.test(v.name)) ||
+                   hkVoices.find(v => /enhanced|premium|natural/i.test(v.name)) ||
+                   hkVoices.find(v => /sinji/i.test(v.name)) ||
                    hkVoices[0];
            }
        }
@@ -425,8 +440,8 @@
            };
        }
 
-       // 建立自然語氣嘅 Utterance
-       function createNaturalUtterance(txt, rate = 0.88, pitch = 1.02) {
+       // 調整語速(0.92)與音調(1.08)，令 Sinji 語氣更清脆自然、減少拖慢機械感
+       function createNaturalUtterance(txt, rate = 0.92, pitch = 1.08) {
            const u = new SpeechSynthesisUtterance(txt);
            u.lang = 'zh-HK';
            if (preferredVoice) u.voice = preferredVoice;
@@ -471,11 +486,11 @@
                // 1. 音素提示模式
                if(currentCueLevel === 1 && text === ""){
                     const ch = questions[currentQuestionIndex].phonemic_cue;
-                    const a = createNaturalUtterance("提示一下，呢個係", 0.88, 1.02);
-                    const b = createNaturalUtterance(ch, 0.55, 1.0);
+                    const a = createNaturalUtterance("提示一下，呢個係", 0.92, 1.08);
+                    const b = createNaturalUtterance(ch, 0.6, 1.05);
                     activeUtterances.push(a, b);
                     a.onend = () => {
-                        setTimeout(() => { if(!finished) synth.speak(b); }, 250);
+                        setTimeout(() => { if(!finished) synth.speak(b); }, 220);
                     };
                     b.onend = done;
                     synth.speak(a);
@@ -500,13 +515,13 @@
                    const isSingleTargetWord = (isRepeatStage && idx === segments.length - 1);
                    const u = createNaturalUtterance(
                        seg,
-                       isSingleTargetWord ? 0.65 : 0.88,
-                       1.02
+                       isSingleTargetWord ? 0.72 : 0.92,
+                       1.08
                    );
                    activeUtterances.push(u);
                    u.onend = () => {
                        idx++;
-                       setTimeout(speakNextSegment, 260);
+                       setTimeout(speakNextSegment, 220);
                    };
                    synth.speak(u);
                }
@@ -766,7 +781,10 @@
            setTimeout(moveToNextCue,100);
        };
 
-       document.addEventListener('DOMContentLoaded',updateProgress);
+       document.addEventListener('DOMContentLoaded', () => {
+           updateProgress();
+           preloadImages();
+       });
    </script>
 </body>
 </html>
