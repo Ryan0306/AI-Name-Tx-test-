@@ -70,18 +70,18 @@
            display:block;
            transition: border-color 0.3s ease, box-shadow 0.3s ease;
        }
-       /* 聆聽中圖片外框發光提示 */
        #item-image.listening-highlight {
            border-color: #28a745;
            box-shadow: 0 0 20px rgba(40, 167, 69, 0.35);
        }
 
        #message{
-           font-size:2.4em;
+           font-size:2.2em;
            color:#333;
            min-height:75px;
            margin:15px 0;
            font-weight:bold;
+           line-height:1.4;
        }
        #cue-button{
            background:#007bff;
@@ -95,6 +95,20 @@
            margin-bottom:15px;
        }
        #cue-button:hover{background:#0056b3}
+
+       /* 授權按鈕樣式 */
+       #perm-button{
+           background:#ff9800;
+           color:#fff;
+           padding:16px 40px;
+           font-size:1.6em;
+           border:none;
+           border-radius:10px;
+           cursor:pointer;
+           box-shadow: 0 4px 10px rgba(255, 152, 0, 0.3);
+       }
+       #perm-button:hover{background:#e68900}
+
        #start-button{
            background:#28a745;
            color:#fff;
@@ -103,8 +117,10 @@
            border:none;
            border-radius:10px;
            cursor:pointer;
+           display:none; /* 授權成功後先顯示 */
        }
        #start-button:hover{background:#1e7e34}
+
        .progress-bar-container{
            width:100%;
            max-width:800px;
@@ -133,17 +149,17 @@
        <div id="status-badge" class="status-idle">準備中...</div>
        <img id="item-image" src="" alt="目標物品圖片" style="display:none">
        <button id="cue-button" style="display:none">提示</button>
-       <div id="message"></div>
+       <div id="message">為避免練習中途受阻，請先開啟咪高峰及聲音權限</div>
+       <button id="perm-button">🎤 授權咪高峰與聲音</button>
        <button id="start-button">開始練習</button>
    </div>
    <div class="progress-bar-container"><div id="progress-bar"></div></div>
 
    <script>
-       // 1. 已將「橙」替換為「芒果」
        const questions = [
            {word:"蘋果",image:"蘋果.jpg",phonemic_cue:"蘋",correct_aliases:["蘋果"]},
            {word:"香蕉",image:"香蕉.jpg",phonemic_cue:"香",correct_aliases:["香蕉","蕉"]},
-           {word:"芒果",image:"芒果.jpg",phonemic_cue:"芒",correct_aliases:["芒果"]},
+           {word:"芒果",image:"芒果.jpg",phonemic_cue:"芒",correct_aliases:["芒果","芒"]},
            {word:"士多啤梨",image:"士多啤梨.jpg",phonemic_cue:"士",correct_aliases:["士多啤梨","草莓"]},
            {word:"奇異果",image:"奇異果.jpg",phonemic_cue:"奇",correct_aliases:["奇異果","獼猴桃"]},
            {word:"西瓜",image:"西瓜.jpg",phonemic_cue:"西",correct_aliases:["西瓜"]}
@@ -156,8 +172,9 @@
        let listenStartTime = 0;
        let cueLock = false;
        let speakFallbackTimer = null;
+       let audioUnlocked = false;
 
-       // 2. 防止螢幕休眠 (Wake Lock) 變數與函式
+       // 防止螢幕休眠 (Wake Lock)
        let wakeLock = null;
 
        async function requestWakeLock() {
@@ -181,9 +198,8 @@
            }
        }
 
-       // 當切換分頁或畫面重新顯示時，如果練習仍在進行中，自動重新鎖定螢幕長亮
        document.addEventListener('visibilitychange', async () => {
-           if (document.visibilityState === 'visible' && startButton.style.display === 'none') {
+           if (document.visibilityState === 'visible' && startButton.style.display === 'none' && permButton.style.display === 'none') {
                await requestWakeLock();
            }
        });
@@ -192,12 +208,55 @@
        const messageElement=document.getElementById('message');
        const progressBarElement=document.getElementById('progress-bar');
        const cueButton=document.getElementById('cue-button');
+       const permButton=document.getElementById('perm-button');
        const startButton=document.getElementById('start-button');
        const statusBadge=document.getElementById('status-badge');
        const synth=window.speechSynthesis;
        let recognition=null;
 
-       // 3. 更新視覺狀態回饋
+       // 關鍵修復：必須在用戶點擊按鈕的「同步瞬間」解鎖瀏覽器語音引擎
+       function unlockSpeechSynthesis() {
+           if (!synth) return;
+           try {
+               synth.cancel();
+               const silentUtt = new SpeechSynthesisUtterance(' ');
+               silentUtt.lang = 'zh-HK';
+               silentUtt.volume = 0; // 靜音解鎖
+               synth.speak(silentUtt);
+               audioUnlocked = true;
+           } catch (e) {}
+       }
+
+       // 預先要求咪高峰權限
+       permButton.onclick = async () => {
+           // 1. 趁用戶點擊瞬間，同步解鎖喇叭語音合成
+           unlockSpeechSynthesis();
+
+           if (!checkRecognitionSupport()) return;
+
+           permButton.disabled = true;
+           permButton.textContent = "正在請求權限...";
+
+           try {
+               // 2. 透過 getUserMedia 預先彈出系統咪高峰授權視窗
+               if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                   // 拿到授權後即刻釋放音軌，避免佔用咪高峰影響之後 SpeechRecognition
+                   stream.getTracks().forEach(track => track.stop());
+               }
+               
+               // 3. 授權成功，切換成「開始練習」按鈕，並播一聲確認聲音正常
+               permButton.style.display = 'none';
+               startButton.style.display = 'block';
+               messageElement.textContent = "✅ 已準備好，請按「開始練習」";
+           } catch (err) {
+               permButton.disabled = false;
+               permButton.textContent = "🎤 重新授權咪高峰";
+               messageElement.textContent = "⚠️ 無法取得咪高峰權限，請喺瀏覽器設定允許使用咪高峰";
+           }
+       };
+
+       // 更新視覺狀態回饋
        function setVisualStatus(state) {
            statusBadge.style.display = 'inline-block';
            statusBadge.className = '';
@@ -220,7 +279,10 @@
 
        function checkRecognitionSupport(){
            if(!('SpeechRecognition'in window||'webkitSpeechRecognition'in window)){
-               messageElement.textContent="瀏覽器唔支援語音辨識"; startButton.disabled=true; return false;
+               messageElement.textContent="瀏覽器唔支援語音辨識，建議使用 Chrome 或 Safari";
+               permButton.disabled=true;
+               startButton.disabled=true;
+               return false;
            }
            return true;
        }
@@ -281,6 +343,12 @@
                if(callback)callback();
                return;
            }
+           
+           // 確保清走之前殘留排隊嘅語音
+           if(synth.speaking || synth.pending) {
+               synth.cancel();
+           }
+
            isSpeakingNow = true;
            setVisualStatus('speaking');
            try{ recognition?.abort(); }catch(e){}
@@ -297,31 +365,35 @@
                if(callback) callback();
            };
 
-           // 保險機制：防止瀏覽器 TTS onend 偶發性失效導致卡死
            speakFallbackTimer = setTimeout(done, 6000);
 
-           if(currentCueLevel===1){
-                const ch=questions[currentQuestionIndex].phonemic_cue;
-                const a=new SpeechSynthesisUtterance("呢個係");a.lang='zh-HK';a.rate=0.9;
-                const b=new SpeechSynthesisUtterance(ch);b.lang='zh-HK';b.rate=0.25;
-                activeUtterances.push(a,b);
-                a.onend=()=>{synth.speak(b);b.onend=done;};
-                synth.speak(a); return;
-           }
-           if(text.includes("你試下講一次")){
-                const w=questions[currentQuestionIndex].word;
-                const p1=`呢個係${w}，你試下講一次`;
-                const u1=new SpeechSynthesisUtterance(p1);u1.lang='zh-HK';u1.rate=0.9;
-                const u2=new SpeechSynthesisUtterance(w);u2.lang='zh-HK';u2.rate=0.4;
-                activeUtterances.push(u1,u2);
-                u1.onend=()=>{synth.speak(u2);u2.onend=done;};
-                synth.speak(u1); return;
-           }
-           const cleanText = text.replace(/。/g, '');
-           const utt=new SpeechSynthesisUtterance(cleanText);utt.lang='zh-HK';utt.rate=0.9;
-           activeUtterances.push(utt);
-           utt.onend=done;
-           synth.speak(utt);
+           // 稍微延遲 50ms 播音，避免剛才 synth.cancel() 意外取消咗新一句
+           setTimeout(() => {
+               if(finished) return;
+
+               if(currentCueLevel===1){
+                    const ch=questions[currentQuestionIndex].phonemic_cue;
+                    const a=new SpeechSynthesisUtterance("呢個係");a.lang='zh-HK';a.rate=0.9;
+                    const b=new SpeechSynthesisUtterance(ch);b.lang='zh-HK';b.rate=0.25;
+                    activeUtterances.push(a,b);
+                    a.onend=()=>{synth.speak(b);b.onend=done;};
+                    synth.speak(a); return;
+               }
+               if(text.includes("你試下講一次")){
+                    const w=questions[currentQuestionIndex].word;
+                    const p1=`呢個係${w}，你試下講一次`;
+                    const u1=new SpeechSynthesisUtterance(p1);u1.lang='zh-HK';u1.rate=0.9;
+                    const u2=new SpeechSynthesisUtterance(w);u2.lang='zh-HK';u2.rate=0.4;
+                    activeUtterances.push(u1,u2);
+                    u1.onend=()=>{synth.speak(u2);u2.onend=done;};
+                    synth.speak(u1); return;
+               }
+               const cleanText = text.replace(/。/g, '');
+               const utt=new SpeechSynthesisUtterance(cleanText);utt.lang='zh-HK';utt.rate=0.9;
+               activeUtterances.push(utt);
+               utt.onend=done;
+               synth.speak(utt);
+           }, 50);
        }
 
        function updateProgress(){
@@ -441,16 +513,20 @@
            imageElement.style.display='none';
            cueButton.style.display='none';
            setVisualStatus('hidden');
-           releaseWakeLock(); // 練習完成後釋放螢幕休眠鎖定
+           releaseWakeLock();
            messageElement.textContent="做得非常好，我哋已經完成呢個練習喇！";
            speak("做得非常好，我哋已經完成呢個練習喇！");
            startButton.style.display='block';
            startButton.textContent='重新開始';
        }
 
-       startButton.onclick=async ()=>{
+       startButton.onclick=()=>{
            if(!checkRecognitionSupport()) return;
-           await requestWakeLock(); // 開始練習時鎖定螢幕長亮
+           
+           // 再次確保用戶點擊瞬間語音引擎處於解鎖狀態（不要放任何 await 在 speak 之前！）
+           unlockSpeechSynthesis();
+           requestWakeLock(); // 不加 await，讓佢背景執行，唔阻礙同步語音觸發
+
            startButton.style.display='none';
            currentQuestionIndex=-1;
            progressBarElement.style.backgroundColor='#ffc107';
