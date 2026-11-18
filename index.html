@@ -8,7 +8,7 @@
 
    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
 
-   <title>命名練習：水果</title> 
+   <title>命名練習：生果</title> 
 
    <style> 
 
@@ -180,7 +180,7 @@
 
    <div class="container"> 
 
-       <h1>命名練習：水果</h1> 
+       <h1>命名練習：生果</h1> 
 
        <img id="item-image" src="" alt="目標物品圖片" style="display:none"> 
 
@@ -221,6 +221,12 @@
        let isWaitingForAnswer = false;  
 
        let activeUtterances = []; 
+
+       let isSpeakingNow = false; 
+
+       let listenStartTime = 0; 
+
+       let cueLock = false; 
 
         
 
@@ -286,6 +292,12 @@
 
            recognition.onresult=e=>{ 
 
+               if(isSpeakingNow) return; 
+
+               const transcript = e.results[0][0].transcript.trim(); 
+
+               if(!transcript) return; 
+
                isWaitingForAnswer = false;  
 
                clearTimeout(timer); 
@@ -294,7 +306,7 @@
 
                recognitionActive=false; 
 
-               checkAnswer(e.results[0][0].transcript.trim()); 
+               checkAnswer(transcript); 
 
            }; 
 
@@ -312,13 +324,13 @@
 
                recognitionActive=false; 
 
-               if(isWaitingForAnswer && !correctAnswered && currentCueLevel < 2){ 
+               if(isWaitingForAnswer && !correctAnswered && !isSpeakingNow && currentCueLevel < 2){ 
 
                    clearTimeout(listenDelayTimer); 
 
                    listenDelayTimer=setTimeout(()=>{ 
 
-                       if(isWaitingForAnswer && !correctAnswered && currentCueLevel < 2){ 
+                       if(isWaitingForAnswer && !correctAnswered && !isSpeakingNow && currentCueLevel < 2){ 
 
                            try { 
 
@@ -332,7 +344,7 @@
 
                        } 
 
-                   }, 300); 
+                   }, 400); 
 
                } 
 
@@ -346,7 +358,25 @@
 
            if(!synth){if(callback)callback();return;} 
 
+           isSpeakingNow = true; 
+
+           try{ recognition?.abort(); }catch(e){} 
+
+           recognitionActive = false; 
+
            activeUtterances=[]; 
+
+  
+
+           const done = () => { 
+
+               isSpeakingNow = false; 
+
+               if(callback) callback(); 
+
+           }; 
+
+  
 
            if(currentCueLevel===1){ 
 
@@ -358,7 +388,7 @@
 
                 activeUtterances.push(a,b); 
 
-                a.onend=()=>{synth.speak(b);b.onend=callback||(()=>{});}; 
+                a.onend=()=>{synth.speak(b);b.onend=done;}; 
 
                 synth.speak(a); return; 
 
@@ -374,11 +404,9 @@
 
                 const u2=new SpeechSynthesisUtterance(w);u2.lang='zh-HK';u2.rate=0.4; 
 
-                const u3=new SpeechSynthesisUtterance("。");u3.lang='zh-HK';u3.rate=0.9; 
+                activeUtterances.push(u1,u2); 
 
-                activeUtterances.push(u1,u2,u3); 
-
-                u1.onend=()=>{synth.speak(u2);u2.onend=()=>{synth.speak(u3);u3.onend=callback||(()=>{});};}; 
+                u1.onend=()=>{synth.speak(u2);u2.onend=done;}; 
 
                 synth.speak(u1); return; 
 
@@ -388,7 +416,7 @@
 
            activeUtterances.push(utt); 
 
-           if(callback)utt.onend=callback; 
+           utt.onend=done; 
 
            synth.speak(utt); 
 
@@ -420,11 +448,13 @@
 
            listenDelayTimer=setTimeout(()=>{ 
 
-               if(!isWaitingForAnswer || correctAnswered) return; 
+               if(!isWaitingForAnswer || correctAnswered || isSpeakingNow) return; 
 
                try { 
 
                    setupRecognitionInstance(); 
+
+                   listenStartTime = Date.now(); 
 
                    recognition.start(); 
 
@@ -434,7 +464,7 @@
 
                startNextCueTimer(); 
 
-           }, 350); 
+           }, 850); 
 
        } 
 
@@ -468,6 +498,8 @@
 
            const correct=q.correct_aliases.some(a=>ans.toLowerCase().includes(a.toLowerCase())); 
 
+           const elapsed = Date.now() - listenStartTime; 
+
             
 
            isWaitingForAnswer = false; 
@@ -486,13 +518,23 @@
 
                 if(synth.speaking) synth.cancel(); 
 
+                isSpeakingNow = false; 
+
                 cueButton.style.display='none'; 
 
-                setTimeout(()=>handleCorrectAnswer(q.word),80); 
+                setTimeout(()=>handleCorrectAnswer(q.word),100); 
 
            }else{ 
 
                 try{ recognition?.abort(); }catch(e){} 
+
+                if(elapsed < 1200){ 
+
+                    startListening(); 
+
+                    return; 
+
+                } 
 
                 setTimeout(moveToNextCue,1500); 
 
@@ -560,7 +602,7 @@
 
            messageElement.textContent=w; 
 
-           speak(`呢個係${w}，你試下講一次，${w}`,()=>setTimeout(moveToNextQuestion,3000)); 
+           speak(`呢個係${w}，你試下講一次，${w}。`,()=>setTimeout(moveToNextQuestion,3000)); 
 
        } 
 
@@ -638,19 +680,25 @@
 
        cueButton.onclick=()=>{  
 
-           if(correctAnswered) return;  
+           if(correctAnswered || cueLock) return; 
+
+           cueLock = true; 
+
+           setTimeout(()=>{ cueLock = false; }, 800); 
 
            isWaitingForAnswer = false;  
 
            clearTimeout(timer);  
 
-           clearTimeout(listenDelayTimer);  
+           clearTimeout(listenDelayTimer); 
 
            try{ recognition?.abort(); }catch(e){} 
 
            if(synth.speaking) synth.cancel(); 
 
-           setTimeout(moveToNextCue,80); 
+           isSpeakingNow = false; 
+
+           setTimeout(moveToNextCue,100); 
 
        }; 
 
