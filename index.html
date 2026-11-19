@@ -33,15 +33,17 @@
            display: none;
            padding: 10px 26px;
            border-radius: 30px;
-           font-size: 1.35em;
+           font-size: clamp(1.15rem, 4.2vw, 1.35rem);
            font-weight: bold;
            margin-bottom: 15px;
            transition: all 0.3s ease;
+           white-space: nowrap;
        }
-       .status-speaking {
+       .status-speaking-listening {
            background-color: #fff3cd;
            color: #856404;
-           border: 2px solid #ffeeba;
+           border: 2px solid #28a745;
+           animation: pulse-green 1.5s infinite;
        }
        .status-listening {
            background-color: #d4edda;
@@ -55,7 +57,7 @@
            border: 2px solid #d6d8db;
        }
        @keyframes pulse-green {
-           0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.5); }
+           0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.45); }
            70% { box-shadow: 0 0 0 12px rgba(40, 167, 69, 0); }
            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
        }
@@ -111,7 +113,6 @@
        }
        #perm-button:hover{background:#e68900}
 
-       /* 結束後的按鈕群組 */
        .action-buttons {
            display: flex;
            flex-direction: column;
@@ -161,7 +162,6 @@
            text-align: left;
            box-sizing: border-box;
        }
-       /* 修復總結標題文字跌落下一行問題 */
        .summary-header {
            font-size: clamp(1.25rem, 4.6vw, 1.55rem);
            font-weight: bold;
@@ -192,33 +192,16 @@
            font-weight: bold;
            color: #222;
        }
-       .badge-correct {
-           background: #d4edda;
-           color: #155724;
+       .badge-correct, .badge-cue, .badge-repeat {
            padding: 5px 12px;
            border-radius: 20px;
            font-weight: bold;
            font-size: 0.9em;
            white-space: nowrap;
        }
-       .badge-cue {
-           background: #fff3cd;
-           color: #856404;
-           padding: 5px 12px;
-           border-radius: 20px;
-           font-weight: bold;
-           font-size: 0.9em;
-           white-space: nowrap;
-       }
-       .badge-repeat {
-           background: #f8d7da;
-           color: #721c24;
-           padding: 5px 12px;
-           border-radius: 20px;
-           font-weight: bold;
-           font-size: 0.9em;
-           white-space: nowrap;
-       }
+       .badge-correct { background: #d4edda; color: #155724; }
+       .badge-cue { background: #fff3cd; color: #856404; }
+       .badge-repeat { background: #f8d7da; color: #721c24; }
 
        .progress-bar-container{
            width:100%;
@@ -251,7 +234,6 @@
        <button id="cue-button" style="display:none">提示</button>
        <div id="message">開啟麥克風及聲音權限</div>
        
-       <!-- 成績總結表 -->
        <div id="summary-container">
            <div class="summary-header" id="summary-score">練習記錄</div>
            <ul class="summary-list" id="summary-list"></ul>
@@ -267,7 +249,9 @@
    <div class="progress-bar-container"><div id="progress-bar"></div></div>
 
    <script>
-       // 完整題庫
+       const ANSWER_TIME_LIMIT_MS = 10000;
+       const REPEAT_TIME_LIMIT_MS = 8000;
+
        const allQuestions = [
            {word:"蘋果",image:"蘋果.jpg",phonemic_cue:"蘋",correct_aliases:["蘋果"]},
            {word:"香蕉",image:"香蕉.jpg",phonemic_cue:"香",correct_aliases:["香蕉","蕉"]},
@@ -277,10 +261,38 @@
            {word:"西瓜",image:"西瓜.jpg",phonemic_cue:"西",correct_aliases:["西瓜"]}
        ];
 
-       // 當前練習使用的題目列表（可能是全部題目，亦可能是錯題重溫）
        let activeQuestions = [...allQuestions];
+       let currentQuestionIndex = 0;
+       let currentCueLevel = 0;
+       let timer = null;
+       let listenDelayTimer = null;
+       let speakFallbackTimer = null;
+       let correctAnswered = false;
+       let isWaitingForAnswer = false;
+       let isRepeatStage = false;
+       let isSpeakingNow = false;
+       let listenStartTime = 0;
+       let cueLock = false;
+       let speakCancelToken = 0;
+       let activeUtterances = [];
+       let preferredVoice = null;
+       let resultsRecord = [];
+       let wakeLock = null;
 
-       // 隨機撈亂指定題目陣列（Fisher-Yates 洗牌演算法）
+       const imageElement = document.getElementById('item-image');
+       const messageElement = document.getElementById('message');
+       const progressBarElement = document.getElementById('progress-bar');
+       const cueButton = document.getElementById('cue-button');
+       const permButton = document.getElementById('perm-button');
+       const startButton = document.getElementById('start-button');
+       const reviewWrongButton = document.getElementById('review-wrong-button');
+       const statusBadge = document.getElementById('status-badge');
+       const summaryContainer = document.getElementById('summary-container');
+       const summaryList = document.getElementById('summary-list');
+       const summaryScore = document.getElementById('summary-score');
+       const synth = window.speechSynthesis;
+       let recognition = null;
+
        function shuffleArray(arr) {
            for (let i = arr.length - 1; i > 0; i--) {
                const j = Math.floor(Math.random() * (i + 1));
@@ -288,46 +300,25 @@
            }
        }
 
-       // 預先在背景載入所有圖片，避免切換題目時載入緩慢
-       const preloadedImages = [];
        function preloadImages() {
            allQuestions.forEach(q => {
                const img = new Image();
                img.src = q.image;
-               preloadedImages.push(img);
            });
        }
-
-       let currentQuestionIndex=0, currentCueLevel=0, recognitionActive=false, timer, listenDelayTimer, correctAnswered=false;
-       let isWaitingForAnswer = false;
-       let isRepeatStage = false;
-       let activeUtterances = [];
-       let isSpeakingNow = false;
-       let listenStartTime = 0;
-       let cueLock = false;
-       let speakFallbackTimer = null;
-       let preferredVoice = null;
-       let resultsRecord = [];
-
-       // 防止螢幕休眠 (Wake Lock)
-       let wakeLock = null;
 
        async function requestWakeLock() {
            if ('wakeLock' in navigator) {
                try {
                    wakeLock = await navigator.wakeLock.request('screen');
-                   wakeLock.addEventListener('release', () => {
-                       wakeLock = null;
-                   });
+                   wakeLock.addEventListener('release', () => { wakeLock = null; });
                } catch (err) {}
            }
        }
 
        function releaseWakeLock() {
            if (wakeLock !== null) {
-               wakeLock.release().then(() => {
-                   wakeLock = null;
-               }).catch(() => {});
+               wakeLock.release().then(() => { wakeLock = null; }).catch(() => {});
            }
        }
 
@@ -337,21 +328,6 @@
            }
        });
 
-       const imageElement=document.getElementById('item-image');
-       const messageElement=document.getElementById('message');
-       const progressBarElement=document.getElementById('progress-bar');
-       const cueButton=document.getElementById('cue-button');
-       const permButton=document.getElementById('perm-button');
-       const startButton=document.getElementById('start-button');
-       const reviewWrongButton=document.getElementById('review-wrong-button');
-       const statusBadge=document.getElementById('status-badge');
-       const summaryContainer=document.getElementById('summary-container');
-       const summaryList=document.getElementById('summary-list');
-       const summaryScore=document.getElementById('summary-score');
-       const synth=window.speechSynthesis;
-       let recognition=null;
-
-       // 選取瀏覽器可用的最佳廣東話語音（優先增強版 / Sinji）
        function loadBestCantoneseVoice() {
            if (!synth) return;
            const voices = synth.getVoices();
@@ -368,7 +344,6 @@
        }
        loadBestCantoneseVoice();
 
-       // 同步解鎖瀏覽器語音引擎
        function unlockSpeechSynthesis() {
            if (!synth) return;
            try {
@@ -382,7 +357,6 @@
            } catch (e) {}
        }
 
-       // 預先要求麥克風權限
        permButton.onclick = async () => {
            unlockSpeechSynthesis();
            if (!checkRecognitionSupport()) return;
@@ -405,15 +379,18 @@
            }
        };
 
-       // 更新視覺狀態回饋
        function setVisualStatus(state) {
            statusBadge.style.display = 'inline-block';
            statusBadge.className = '';
            imageElement.classList.remove('listening-highlight');
 
-           if (state === 'speaking') {
-               statusBadge.textContent = '🔊 系統發問中...';
-               statusBadge.classList.add('status-speaking');
+           if (state === 'speaking_and_listening') {
+               statusBadge.textContent = '🎤 隨時可以讀出答案...';
+               statusBadge.classList.add('status-speaking-listening');
+               imageElement.classList.add('listening-highlight');
+           } else if (state === 'speaking') {
+               statusBadge.textContent = '🔊 系統回饋中...';
+               statusBadge.classList.add('status-idle');
            } else if (state === 'listening') {
                statusBadge.textContent = isRepeatStage ? '🎤 請跟住讀一次...' : '🎤 請讀出答案...';
                statusBadge.classList.add('status-listening');
@@ -427,7 +404,7 @@
        }
 
        function checkRecognitionSupport(){
-           if(!('SpeechRecognition'in window||'webkitSpeechRecognition'in window)){
+           if(!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)){
                messageElement.textContent="瀏覽器唔支援語音辨識，建議使用 Safari 或 Chrome";
                permButton.disabled=true;
                startButton.disabled=true;
@@ -446,41 +423,58 @@
                }catch(e){}
                recognition=null;
            }
-           recognition=new (window.SpeechRecognition||window.webkitSpeechRecognition)();
-           recognition.lang='zh-HK';
-           recognition.interimResults=false;
-           recognition.continuous=false;
+           recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+           recognition.lang = 'zh-HK';
+           recognition.interimResults = true;
+           recognition.continuous = false;
 
-           recognition.onresult=e=>{
-               if(isSpeakingNow) return;
-               const transcript = e.results[0][0].transcript.trim();
+           recognition.onresult = e => {
+               if(!isWaitingForAnswer || correctAnswered) return;
+
+               let transcript = '';
+               let isFinal = false;
+               for (let i = e.resultIndex; i < e.results.length; i++) {
+                   transcript += e.results[i][0].transcript;
+                   if (e.results[i].isFinal) isFinal = true;
+               }
+               transcript = transcript.trim();
                if(!transcript) return;
-               isWaitingForAnswer = false;
-               clearTimeout(timer);
-               clearTimeout(listenDelayTimer);
-               recognitionActive=false;
-               setVisualStatus('idle');
-               checkAnswer(transcript);
-           };
 
-           recognition.onerror=e=>{
-               recognitionActive=false;
-           };
+               const q = activeQuestions[currentQuestionIndex];
+               const isMatch = q.correct_aliases.some(a => transcript.toLowerCase().includes(a.toLowerCase()));
 
-           recognition.onend=()=>{
-               recognitionActive=false;
-               if(isWaitingForAnswer && !correctAnswered && !isSpeakingNow){
+               if (isMatch) {
+                   isWaitingForAnswer = false;
+                   clearTimeout(timer);
                    clearTimeout(listenDelayTimer);
-                   listenDelayTimer=setTimeout(()=>{
-                       if(isWaitingForAnswer && !correctAnswered && !isSpeakingNow){
+                   setVisualStatus('idle');
+                   checkAnswer(transcript);
+                   return;
+               }
+
+               if (isSpeakingNow) return;
+
+               if (isFinal) {
+                   isWaitingForAnswer = false;
+                   clearTimeout(timer);
+                   clearTimeout(listenDelayTimer);
+                   setVisualStatus('idle');
+                   checkAnswer(transcript);
+               }
+           };
+
+           recognition.onend = () => {
+               if(isWaitingForAnswer && !correctAnswered){
+                   clearTimeout(listenDelayTimer);
+                   listenDelayTimer = setTimeout(() => {
+                       if(isWaitingForAnswer && !correctAnswered){
                            try {
                                setupRecognitionInstance();
                                recognition.start();
-                               recognitionActive = true;
-                               setVisualStatus('listening');
+                               if (!isSpeakingNow) setVisualStatus('listening');
                            } catch(err) {}
                        }
-                   }, 400);
+                   }, 300);
                }
            };
        }
@@ -494,11 +488,14 @@
            return u;
        }
 
-       function speak(text, callback){
+       function speak(text, callback, allowBargeIn = false){
            clearTimeout(speakFallbackTimer);
+           speakCancelToken++;
+           const currentToken = speakCancelToken;
+
            if(!synth){
                setVisualStatus('idle');
-               if(callback)callback();
+               if(callback) callback();
                return;
            }
            if(synth.speaking || synth.pending) {
@@ -506,25 +503,28 @@
            }
 
            isSpeakingNow = true;
-           setVisualStatus('speaking');
-           try{ recognition?.abort(); }catch(e){}
-           recognitionActive = false;
-           activeUtterances=[];
+           if (!allowBargeIn) {
+               try{ recognition?.abort(); }catch(e){}
+               setVisualStatus('speaking');
+           } else {
+               setVisualStatus('speaking_and_listening');
+           }
+           activeUtterances = [];
 
            let finished = false;
            const done = () => {
-               if(finished) return;
+               if(finished || currentToken !== speakCancelToken) return;
                finished = true;
                clearTimeout(speakFallbackTimer);
                isSpeakingNow = false;
-               setVisualStatus('idle');
+               if (!allowBargeIn) setVisualStatus('idle');
                if(callback) callback();
            };
 
            speakFallbackTimer = setTimeout(done, 8000);
 
            setTimeout(() => {
-               if(finished) return;
+               if(finished || currentToken !== speakCancelToken) return;
 
                if(currentCueLevel === 1 && text === ""){
                     const ch = activeQuestions[currentQuestionIndex].phonemic_cue;
@@ -532,7 +532,9 @@
                     const b = createNaturalUtterance(ch, 0.6, 1.05);
                     activeUtterances.push(a, b);
                     a.onend = () => {
-                        setTimeout(() => { if(!finished) synth.speak(b); }, 220);
+                        setTimeout(() => {
+                            if(!finished && currentToken === speakCancelToken) synth.speak(b);
+                        }, 220);
                     };
                     b.onend = done;
                     synth.speak(a);
@@ -547,7 +549,7 @@
 
                let idx = 0;
                function speakNextSegment() {
-                   if (finished) return;
+                   if (finished || currentToken !== speakCancelToken) return;
                    if (idx >= segments.length) {
                        done();
                        return;
@@ -579,37 +581,41 @@
            if(displayIndex === activeQuestions.length) progressBarElement.style.backgroundColor = '#28a745';
        }
 
-       function startListening(durationMs = 10000){
-           if(correctAnswered) return;
+       function beginImmediateListening() {
+           if (correctAnswered) return;
            clearTimeout(listenDelayTimer);
            isWaitingForAnswer = true;
-           setVisualStatus('idle');
-           listenDelayTimer=setTimeout(()=>{
-               if(!isWaitingForAnswer || correctAnswered || isSpeakingNow) return;
-               try {
-                   setupRecognitionInstance();
-                   listenStartTime = Date.now();
-                   recognition.start();
-                   recognitionActive=true;
-                   setVisualStatus('listening');
-               } catch(e) {}
-               startNextCueTimer(durationMs);
-           }, 750);
+           listenStartTime = Date.now();
+           try {
+               setupRecognitionInstance();
+               recognition.start();
+           } catch(e) {}
        }
 
-       function startNextCueTimer(durationMs = 10000){
+       function startAnswerTimer(durationMs = ANSWER_TIME_LIMIT_MS){
+           if(correctAnswered || !isWaitingForAnswer) return;
            clearTimeout(timer);
-           timer=setTimeout(()=>{
+
+           if (!recognition) {
+               try {
+                   setupRecognitionInstance();
+                   recognition.start();
+               } catch(e) {}
+           }
+
+           listenStartTime = Date.now();
+           setVisualStatus('listening');
+
+           timer = setTimeout(() => {
                if(correctAnswered || !isWaitingForAnswer) return;
                isWaitingForAnswer = false;
                try{ recognition?.abort(); }catch(e){}
-               recognitionActive=false;
                setVisualStatus('idle');
 
                if (isRepeatStage) {
                    handleRepeatTimeout();
                } else {
-                   setTimeout(moveToNextCue, 800);
+                   setTimeout(moveToNextCue, 600);
                }
            }, durationMs);
        }
@@ -624,11 +630,12 @@
            clearTimeout(listenDelayTimer);
 
            if(correct){
-                correctAnswered=true;
+                correctAnswered = true;
+                speakCancelToken++;
                 try{ recognition?.abort(); }catch(e){}
                 if(synth.speaking) synth.cancel();
                 isSpeakingNow = false;
-                cueButton.style.display='none';
+                cueButton.style.display = 'none';
 
                 if (isRepeatStage) {
                     recordResult(q, 'repeat_success');
@@ -641,43 +648,43 @@
            }else{
                 try{ recognition?.abort(); }catch(e){}
                 if(elapsed < 1200){
-                    startListening(isRepeatStage ? 8000 : 10000);
+                    isWaitingForAnswer = true;
+                    startAnswerTimer(isRepeatStage ? REPEAT_TIME_LIMIT_MS : ANSWER_TIME_LIMIT_MS);
                     return;
                 }
 
                 if (isRepeatStage) {
                     handleRepeatTimeout();
                 } else {
-                    setTimeout(moveToNextCue, 1200);
+                    setTimeout(moveToNextCue, 1000);
                 }
            }
        }
 
        function recordResult(questionObj, status) {
-           const existing = resultsRecord.find(r => r.word === questionObj.word);
-           if (!existing) {
+           if (!resultsRecord.some(r => r.word === questionObj.word)) {
                resultsRecord.push({ question: questionObj, word: questionObj.word, status });
            }
        }
 
        function handleCorrectAnswer(w){
-           currentCueLevel=0;
-           isRepeatStage=false;
-           messageElement.textContent=w;
+           currentCueLevel = 0;
+           isRepeatStage = false;
+           messageElement.textContent = w;
            const praise = ["啱喇", "好叻呀", "答啱晒", "冇錯"][Math.floor(Math.random()*4)];
-           speak(`${praise}！呢個就係${w}`, () => setTimeout(moveToNextQuestion, 900));
+           speak(`${praise}！呢個就係${w}`, () => setTimeout(moveToNextQuestion, 900), false);
        }
 
        function handleRepeatCorrect(w){
-           currentCueLevel=0;
-           isRepeatStage=false;
-           messageElement.textContent=w;
+           currentCueLevel = 0;
+           isRepeatStage = false;
+           messageElement.textContent = w;
            const praise = [
                `啱喇！讀得好清楚，呢個就係${w}`,
                `好叻呀！跟得非常之啱，係${w}`,
                `冇錯！好標準呀，呢個就係${w}`
            ][Math.floor(Math.random()*3)];
-           speak(praise, () => setTimeout(moveToNextQuestion, 900));
+           speak(praise, () => setTimeout(moveToNextQuestion, 900), false);
        }
 
        function handleRepeatTimeout(){
@@ -685,7 +692,7 @@
            recordResult(q, 'repeat_missed');
            isRepeatStage = false;
            currentCueLevel = 0;
-           speak(`唔緊要，記住呢個係${q.word}，我哋試下下一題`, () => setTimeout(moveToNextQuestion, 800));
+           speak(`唔緊要，記住呢個係${q.word}，我哋試下下一題`, () => setTimeout(moveToNextQuestion, 800), false);
        }
 
        function moveToNextCue(){
@@ -696,11 +703,12 @@
            if(correctAnswered) return;
            currentCueLevel++;
            const q = activeQuestions[currentQuestionIndex];
-           messageElement.textContent="";
-           if(currentCueLevel===1) {
-               speak("", () => startListening(10000));
+           messageElement.textContent = "";
+           if(currentCueLevel === 1) {
+               beginImmediateListening();
+               speak("", () => startAnswerTimer(ANSWER_TIME_LIMIT_MS), true);
            } else {
-               cueButton.style.display='none';
+               cueButton.style.display = 'none';
                handleFinalAnswer(q.word);
            }
        }
@@ -711,9 +719,10 @@
            isWaitingForAnswer = false;
            isRepeatStage = true;
            messageElement.textContent = w;
+           beginImmediateListening();
            speak(`呢個係${w}，你試下讀一次，${w}`, () => {
-               startListening(8000);
-           });
+               startAnswerTimer(REPEAT_TIME_LIMIT_MS);
+           }, true);
        }
 
        function moveToNextQuestion(){
@@ -722,8 +731,8 @@
            isWaitingForAnswer = false;
            isRepeatStage = false;
            currentQuestionIndex++;
-           currentCueLevel=0;
-           correctAnswered=false;
+           currentCueLevel = 0;
+           correctAnswered = false;
            updateProgress();
            if(currentQuestionIndex < activeQuestions.length) loadQuestion(currentQuestionIndex);
            else handleCompletion();
@@ -735,10 +744,11 @@
            imageElement.style.display = 'block';
            cueButton.style.display = 'block';
            messageElement.textContent = "";
-           speak("呢個咩嚟架？", () => startListening(10000));
+
+           beginImmediateListening();
+           speak("呢個咩嚟架？", () => startAnswerTimer(ANSWER_TIME_LIMIT_MS), true);
        }
 
-       // 渲染練習成績總結表，並決定是否顯示「重溫做錯嘅題目」按鈕
        function renderSummaryTable() {
            summaryList.innerHTML = '';
            let independentCount = 0;
@@ -775,11 +785,9 @@
            });
 
            const totalCorrect = independentCount + cuedCount;
-           // 精簡標題文字，防止在手機窄螢幕折行
            summaryScore.textContent = `答對：${totalCorrect} / ${activeQuestions.length} 題`;
            summaryContainer.style.display = 'block';
 
-           // 篩選出非「自己答啱」的題目作為錯題重溫列表
            const wrongItems = resultsRecord.filter(item => item.status !== 'independent');
            if (wrongItems.length > 0) {
                reviewWrongButton.style.display = 'block';
@@ -790,18 +798,17 @@
        }
 
        function handleCompletion(){
-           imageElement.style.display='none';
-           cueButton.style.display='none';
+           imageElement.style.display = 'none';
+           cueButton.style.display = 'none';
            setVisualStatus('hidden');
            releaseWakeLock();
-           messageElement.textContent="做得非常好，完成練習喇！";
+           messageElement.textContent = "做得非常好，完成練習喇！";
            renderSummaryTable();
-           speak("做得非常好，我哋已經完成呢個練習喇！");
-           startButton.style.display='block';
-           startButton.textContent='再練習全部題目';
+           speak("做得非常好，我哋已經完成呢個練習喇！", null, false);
+           startButton.style.display = 'block';
+           startButton.textContent = '再練習全部題目';
        }
 
-       // 統一啟動練習函式（支援全部題目 或 錯題重溫）
        function startPracticeSession(questionList) {
            if(!checkRecognitionSupport()) return;
            unlockSpeechSynthesis();
@@ -810,42 +817,39 @@
            activeQuestions = [...questionList];
            shuffleArray(activeQuestions);
 
-           startButton.style.display='none';
-           reviewWrongButton.style.display='none';
-           summaryContainer.style.display='none';
+           startButton.style.display = 'none';
+           reviewWrongButton.style.display = 'none';
+           summaryContainer.style.display = 'none';
            resultsRecord = [];
            currentQuestionIndex = -1;
-           progressBarElement.style.backgroundColor='#ffc107';
+           progressBarElement.style.backgroundColor = '#ffc107';
            updateProgress();
            moveToNextQuestion();
        }
 
-       startButton.onclick = () => {
-           startPracticeSession(allQuestions);
-       };
+       startButton.onclick = () => startPracticeSession(allQuestions);
 
        reviewWrongButton.onclick = () => {
            const wrongQuestions = resultsRecord
                .filter(item => item.status !== 'independent')
                .map(item => item.question);
-           if (wrongQuestions.length > 0) {
-               startPracticeSession(wrongQuestions);
-           }
+           if (wrongQuestions.length > 0) startPracticeSession(wrongQuestions);
        };
 
-       cueButton.onclick=()=>{
+       cueButton.onclick = () => {
            if(correctAnswered || cueLock || isRepeatStage) return;
            cueLock = true;
-           setTimeout(()=>{ cueLock = false; }, 800);
+           setTimeout(() => { cueLock = false; }, 800);
            isWaitingForAnswer = false;
            clearTimeout(timer);
            clearTimeout(listenDelayTimer);
            clearTimeout(speakFallbackTimer);
+           speakCancelToken++;
            try{ recognition?.abort(); }catch(e){}
            if(synth.speaking) synth.cancel();
            isSpeakingNow = false;
            setVisualStatus('idle');
-           setTimeout(moveToNextCue,100);
+           setTimeout(moveToNextCue, 100);
        };
 
        document.addEventListener('DOMContentLoaded', () => {
