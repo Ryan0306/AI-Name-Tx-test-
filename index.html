@@ -79,8 +79,8 @@
        #message{
            font-size: clamp(1.5rem, 5vw, 2.1rem);
            color:#333;
-           min-height:65px;
-           margin:15px 0;
+           min-height:60px;
+           margin:12px 0;
            font-weight:bold;
            line-height:1.4;
        }
@@ -111,17 +111,40 @@
        }
        #perm-button:hover{background:#e68900}
 
-       #start-button{
-           background:#28a745;
+       /* 結束後的按鈕群組 */
+       .action-buttons {
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           gap: 14px;
+           width: 100%;
+           margin-top: 10px;
+       }
+
+       #review-wrong-button{
+           background:#ff9800;
            color:#fff;
-           padding:18px 46px;
-           font-size:1.7em;
+           padding: 16px 32px;
+           font-size: clamp(1.2rem, 4.5vw, 1.55rem);
            white-space: nowrap;
            border:none;
            border-radius:12px;
            cursor:pointer;
            display:none;
-           margin-top: 15px;
+           box-shadow: 0 4px 10px rgba(255, 152, 0, 0.25);
+       }
+       #review-wrong-button:hover{background:#e68900}
+
+       #start-button{
+           background:#28a745;
+           color:#fff;
+           padding: 16px 42px;
+           font-size: clamp(1.25rem, 4.8vw, 1.65rem);
+           white-space: nowrap;
+           border:none;
+           border-radius:12px;
+           cursor:pointer;
+           display:none;
        }
        #start-button:hover{background:#1e7e34}
 
@@ -132,18 +155,20 @@
            max-width: 600px;
            background: #fff;
            border-radius: 14px;
-           padding: 20px;
+           padding: 18px 16px;
            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-           margin: 10px 0 20px 0;
+           margin: 8px 0 18px 0;
            text-align: left;
            box-sizing: border-box;
        }
+       /* 修復總結標題文字跌落下一行問題 */
        .summary-header {
-           font-size: 1.5em;
+           font-size: clamp(1.25rem, 4.6vw, 1.55rem);
            font-weight: bold;
            color: #333;
            text-align: center;
-           margin-bottom: 15px;
+           white-space: nowrap;
+           margin-bottom: 12px;
            padding-bottom: 10px;
            border-bottom: 2px solid #f0f0f0;
        }
@@ -156,9 +181,9 @@
            display: flex;
            justify-content: space-between;
            align-items: center;
-           padding: 12px 15px;
+           padding: 12px 10px;
            border-bottom: 1px solid #eee;
-           font-size: 1.35em;
+           font-size: clamp(1.15rem, 4.2vw, 1.35rem);
        }
        .summary-item:last-child {
            border-bottom: none;
@@ -170,26 +195,29 @@
        .badge-correct {
            background: #d4edda;
            color: #155724;
-           padding: 5px 14px;
+           padding: 5px 12px;
            border-radius: 20px;
            font-weight: bold;
            font-size: 0.9em;
+           white-space: nowrap;
        }
        .badge-cue {
            background: #fff3cd;
            color: #856404;
-           padding: 5px 14px;
+           padding: 5px 12px;
            border-radius: 20px;
            font-weight: bold;
            font-size: 0.9em;
+           white-space: nowrap;
        }
        .badge-repeat {
            background: #f8d7da;
            color: #721c24;
-           padding: 5px 14px;
+           padding: 5px 12px;
            border-radius: 20px;
            font-weight: bold;
            font-size: 0.9em;
+           white-space: nowrap;
        }
 
        .progress-bar-container{
@@ -230,12 +258,17 @@
        </div>
 
        <button id="perm-button">🎤 開啟麥克風及聲音權限</button>
-       <button id="start-button">開始練習</button>
+       
+       <div class="action-buttons">
+           <button id="review-wrong-button">🔄 重溫做錯嘅題目</button>
+           <button id="start-button">開始練習</button>
+       </div>
    </div>
    <div class="progress-bar-container"><div id="progress-bar"></div></div>
 
    <script>
-       const questions = [
+       // 完整題庫
+       const allQuestions = [
            {word:"蘋果",image:"蘋果.jpg",phonemic_cue:"蘋",correct_aliases:["蘋果"]},
            {word:"香蕉",image:"香蕉.jpg",phonemic_cue:"香",correct_aliases:["香蕉","蕉"]},
            {word:"芒果",image:"芒果.jpg",phonemic_cue:"芒",correct_aliases:["芒果","芒"]},
@@ -244,18 +277,21 @@
            {word:"西瓜",image:"西瓜.jpg",phonemic_cue:"西",correct_aliases:["西瓜"]}
        ];
 
-       // 隨機撈亂題目次序（Fisher-Yates 洗牌演算法）
-       function shuffleQuestions() {
-           for (let i = questions.length - 1; i > 0; i--) {
+       // 當前練習使用的題目列表（可能是全部題目，亦可能是錯題重溫）
+       let activeQuestions = [...allQuestions];
+
+       // 隨機撈亂指定題目陣列（Fisher-Yates 洗牌演算法）
+       function shuffleArray(arr) {
+           for (let i = arr.length - 1; i > 0; i--) {
                const j = Math.floor(Math.random() * (i + 1));
-               [questions[i], questions[j]] = [questions[j], questions[i]];
+               [arr[i], arr[j]] = [arr[j], arr[i]];
            }
        }
 
        // 預先在背景載入所有圖片，避免切換題目時載入緩慢
        const preloadedImages = [];
        function preloadImages() {
-           questions.forEach(q => {
+           allQuestions.forEach(q => {
                const img = new Image();
                img.src = q.image;
                preloadedImages.push(img);
@@ -307,6 +343,7 @@
        const cueButton=document.getElementById('cue-button');
        const permButton=document.getElementById('perm-button');
        const startButton=document.getElementById('start-button');
+       const reviewWrongButton=document.getElementById('review-wrong-button');
        const statusBadge=document.getElementById('status-badge');
        const summaryContainer=document.getElementById('summary-container');
        const summaryList=document.getElementById('summary-list');
@@ -448,7 +485,6 @@
            };
        }
 
-       // 調整語速(0.92)與音調(1.08)，令 Sinji 語氣更清脆自然、減少拖慢機械感
        function createNaturalUtterance(txt, rate = 0.92, pitch = 1.08) {
            const u = new SpeechSynthesisUtterance(txt);
            u.lang = 'zh-HK';
@@ -458,7 +494,6 @@
            return u;
        }
 
-       // 按標點分句加入自然停頓
        function speak(text, callback){
            clearTimeout(speakFallbackTimer);
            if(!synth){
@@ -491,9 +526,8 @@
            setTimeout(() => {
                if(finished) return;
 
-               // 1. 音素提示模式
                if(currentCueLevel === 1 && text === ""){
-                    const ch = questions[currentQuestionIndex].phonemic_cue;
+                    const ch = activeQuestions[currentQuestionIndex].phonemic_cue;
                     const a = createNaturalUtterance("提示一下，呢個係", 0.92, 1.08);
                     const b = createNaturalUtterance(ch, 0.6, 1.05);
                     activeUtterances.push(a, b);
@@ -505,7 +539,6 @@
                     return;
                }
 
-               // 2. 將句子按標點符號拆開，加入自然停頓逐句讀出
                const segments = text.split(/[，。！？、]/).map(s => s.trim()).filter(s => s.length > 0);
                if (segments.length === 0) {
                    done();
@@ -539,10 +572,11 @@
        }
 
        function updateProgress(){
-           const p=(currentQuestionIndex/questions.length)*100;
-           progressBarElement.style.width=p+'%';
-           progressBarElement.textContent=currentQuestionIndex+'/'+questions.length;
-           if(currentQuestionIndex===questions.length) progressBarElement.style.backgroundColor='#28a745';
+           const displayIndex = Math.max(0, currentQuestionIndex);
+           const p = (displayIndex / activeQuestions.length) * 100;
+           progressBarElement.style.width = p + '%';
+           progressBarElement.textContent = displayIndex + '/' + activeQuestions.length;
+           if(displayIndex === activeQuestions.length) progressBarElement.style.backgroundColor = '#28a745';
        }
 
        function startListening(durationMs = 10000){
@@ -581,8 +615,8 @@
        }
 
        function checkAnswer(ans){
-           const q=questions[currentQuestionIndex];
-           const correct=q.correct_aliases.some(a=>ans.toLowerCase().includes(a.toLowerCase()));
+           const q = activeQuestions[currentQuestionIndex];
+           const correct = q.correct_aliases.some(a => ans.toLowerCase().includes(a.toLowerCase()));
            const elapsed = Date.now() - listenStartTime;
 
            isWaitingForAnswer = false;
@@ -597,11 +631,11 @@
                 cueButton.style.display='none';
 
                 if (isRepeatStage) {
-                    recordResult(q.word, 'repeat_success');
+                    recordResult(q, 'repeat_success');
                     setTimeout(() => handleRepeatCorrect(q.word), 100);
                 } else {
                     const statusType = (currentCueLevel === 0) ? 'independent' : 'cued';
-                    recordResult(q.word, statusType);
+                    recordResult(q, statusType);
                     setTimeout(() => handleCorrectAnswer(q.word), 100);
                 }
            }else{
@@ -619,10 +653,10 @@
            }
        }
 
-       function recordResult(word, status) {
-           const existing = resultsRecord.find(r => r.word === word);
+       function recordResult(questionObj, status) {
+           const existing = resultsRecord.find(r => r.word === questionObj.word);
            if (!existing) {
-               resultsRecord.push({ word, status });
+               resultsRecord.push({ question: questionObj, word: questionObj.word, status });
            }
        }
 
@@ -634,7 +668,6 @@
            speak(`${praise}！呢個就係${w}`, () => setTimeout(moveToNextQuestion, 900));
        }
 
-       // 「試下讀一次」跟讀成功嘅鼓勵回饋
        function handleRepeatCorrect(w){
            currentCueLevel=0;
            isRepeatStage=false;
@@ -647,10 +680,9 @@
            speak(praise, () => setTimeout(moveToNextQuestion, 900));
        }
 
-       // 「試下讀一次」超時或未讀清嘅溫柔過渡
        function handleRepeatTimeout(){
-           const q = questions[currentQuestionIndex];
-           recordResult(q.word, 'repeat_missed');
+           const q = activeQuestions[currentQuestionIndex];
+           recordResult(q, 'repeat_missed');
            isRepeatStage = false;
            currentCueLevel = 0;
            speak(`唔緊要，記住呢個係${q.word}，我哋試下下一題`, () => setTimeout(moveToNextQuestion, 800));
@@ -663,7 +695,7 @@
 
            if(correctAnswered) return;
            currentCueLevel++;
-           const q=questions[currentQuestionIndex];
+           const q = activeQuestions[currentQuestionIndex];
            messageElement.textContent="";
            if(currentCueLevel===1) {
                speak("", () => startListening(10000));
@@ -673,7 +705,6 @@
            }
        }
 
-       // 錯兩次後進入「試下讀一次」並重新收音
        function handleFinalAnswer(w){
            clearTimeout(timer);
            clearTimeout(listenDelayTimer);
@@ -694,20 +725,20 @@
            currentCueLevel=0;
            correctAnswered=false;
            updateProgress();
-           if(currentQuestionIndex<questions.length) loadQuestion(currentQuestionIndex);
+           if(currentQuestionIndex < activeQuestions.length) loadQuestion(currentQuestionIndex);
            else handleCompletion();
        }
 
        function loadQuestion(i){
-           const q=questions[i];
-           imageElement.src=q.image;
-           imageElement.style.display='block';
-           cueButton.style.display='block';
-           messageElement.textContent="";
+           const q = activeQuestions[i];
+           imageElement.src = q.image;
+           imageElement.style.display = 'block';
+           cueButton.style.display = 'block';
+           messageElement.textContent = "";
            speak("呢個咩嚟架？", () => startListening(10000));
        }
 
-       // 渲染練習成績總結表
+       // 渲染練習成績總結表，並決定是否顯示「重溫做錯嘅題目」按鈕
        function renderSummaryTable() {
            summaryList.innerHTML = '';
            let independentCount = 0;
@@ -744,8 +775,18 @@
            });
 
            const totalCorrect = independentCount + cuedCount;
-           summaryScore.textContent = `練習成績：直接/提示答對 ${totalCorrect} / ${questions.length} 題`;
+           // 精簡標題文字，防止在手機窄螢幕折行
+           summaryScore.textContent = `答對：${totalCorrect} / ${activeQuestions.length} 題`;
            summaryContainer.style.display = 'block';
+
+           // 篩選出非「自己答啱」的題目作為錯題重溫列表
+           const wrongItems = resultsRecord.filter(item => item.status !== 'independent');
+           if (wrongItems.length > 0) {
+               reviewWrongButton.style.display = 'block';
+               reviewWrongButton.textContent = `🔄 重溫做錯嘅題目 (${wrongItems.length}題)`;
+           } else {
+               reviewWrongButton.style.display = 'none';
+           }
        }
 
        function handleCompletion(){
@@ -757,23 +798,39 @@
            renderSummaryTable();
            speak("做得非常好，我哋已經完成呢個練習喇！");
            startButton.style.display='block';
-           startButton.textContent='再練習一次';
+           startButton.textContent='再練習全部題目';
        }
 
-       startButton.onclick=()=>{
+       // 統一啟動練習函式（支援全部題目 或 錯題重溫）
+       function startPracticeSession(questionList) {
            if(!checkRecognitionSupport()) return;
            unlockSpeechSynthesis();
            requestWakeLock();
 
-           shuffleQuestions(); // 每次開始或重玩都隨機撈亂題目次序
+           activeQuestions = [...questionList];
+           shuffleArray(activeQuestions);
 
            startButton.style.display='none';
+           reviewWrongButton.style.display='none';
            summaryContainer.style.display='none';
            resultsRecord = [];
-           currentQuestionIndex=-1;
+           currentQuestionIndex = -1;
            progressBarElement.style.backgroundColor='#ffc107';
            updateProgress();
            moveToNextQuestion();
+       }
+
+       startButton.onclick = () => {
+           startPracticeSession(allQuestions);
+       };
+
+       reviewWrongButton.onclick = () => {
+           const wrongQuestions = resultsRecord
+               .filter(item => item.status !== 'independent')
+               .map(item => item.question);
+           if (wrongQuestions.length > 0) {
+               startPracticeSession(wrongQuestions);
+           }
        };
 
        cueButton.onclick=()=>{
