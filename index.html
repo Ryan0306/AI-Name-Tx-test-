@@ -185,6 +185,7 @@
        .badge-cue { background: #fff3cd; color: #856404; }
        .badge-repeat { background: #f8d7da; color: #721c24; }
 
+       /* 進度條樣式：文字永遠置中，進度條作為背景填滿 */
        .progress-bar-container{
            width:100%;
            max-width:800px;
@@ -194,16 +195,30 @@
            border-top:1px solid #ddd;
            box-sizing:border-box;
        }
-       #progress-bar{
+       .progress-track{
+           position:relative;
+           width:100%;
            height:38px;
-           background:#ffc107;
+           background:#dee2e6;
            border-radius:6px;
-           transition:width .5s;
+           overflow:hidden;
+       }
+       #progress-bar{
+           height:100%;
+           width:0%;
+           background:#ffc107;
+           transition:width .5s, background-color .3s;
+       }
+       #progress-text{
+           position:absolute;
+           inset:0;
            display:flex;
            align-items:center;
            justify-content:center;
            font-weight:bold;
            font-size:1.3em;
+           color:#333;
+           pointer-events:none;
        }
    </style>
 </head>
@@ -227,7 +242,12 @@
            <button id="start-button" class="btn-base">開始練習</button>
        </div>
    </div>
-   <div class="progress-bar-container"><div id="progress-bar"></div></div>
+   <div class="progress-bar-container">
+       <div class="progress-track">
+           <div id="progress-bar"></div>
+           <div id="progress-text">0/6</div>
+       </div>
+   </div>
 
    <script>
        const ANSWER_TIME_LIMIT_MS = 10000;
@@ -263,6 +283,7 @@
        const imageElement = document.getElementById('item-image');
        const messageElement = document.getElementById('message');
        const progressBarElement = document.getElementById('progress-bar');
+       const progressTextElement = document.getElementById('progress-text');
        const cueButton = document.getElementById('cue-button');
        const permButton = document.getElementById('perm-button');
        const startButton = document.getElementById('start-button');
@@ -532,7 +553,7 @@
            const displayIndex = Math.max(0, currentQuestionIndex);
            const p = (displayIndex / activeQuestions.length) * 100;
            progressBarElement.style.width = p + '%';
-           progressBarElement.textContent = displayIndex + '/' + activeQuestions.length;
+           progressTextElement.textContent = displayIndex + '/' + activeQuestions.length;
            if(displayIndex === activeQuestions.length) progressBarElement.style.backgroundColor = '#28a745';
        }
 
