@@ -149,4 +149,1200 @@
        .action-buttons {
            display: flex;
            flex-direction: column;
-           align
+           align-items: center;
+           gap: 14px;
+           width: 100%;
+           margin-top: 10px;
+       }
+
+       #review-wrong-button{
+           background:#ff9800;
+           padding: 16px 32px;
+           font-size: clamp(1.2rem, 4.5vw, 1.55rem);
+           display:none;
+           box-shadow: 0 4px 10px rgba(255, 152, 0, 0.25);
+       }
+       #review-wrong-button:hover{background:#e68900}
+
+       #start-button{
+           background:#28a745;
+           padding: 16px 42px;
+           font-size: clamp(1.25rem, 4.8vw, 1.65rem);
+           display:none;
+       }
+       #start-button:hover{background:#1e7e34}
+
+       #therapist-toggle-btn{
+           background:#5c6bc0;
+           padding: 14px 32px;
+           font-size: clamp(1.15rem, 4.2vw, 1.45rem);
+           display:none;
+           box-shadow: 0 4px 10px rgba(92, 107, 192, 0.25);
+       }
+       #therapist-toggle-btn:hover{background:#3f51b5}
+
+       /* 成績總結表樣式 */
+       #summary-container {
+           display: none;
+           width: 100%;
+           max-width: 600px;
+           background: #fff;
+           border-radius: 14px;
+           padding: 18px 16px;
+           box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+           margin: 8px 0 18px 0;
+           text-align: left;
+           box-sizing: border-box;
+       }
+       .summary-header {
+           font-size: clamp(1.25rem, 4.6vw, 1.55rem);
+           font-weight: bold;
+           text-align: center;
+           white-space: nowrap;
+           margin-bottom: 12px;
+           padding-bottom: 10px;
+           border-bottom: 2px solid #f0f0f0;
+       }
+       .summary-list {
+           list-style: none;
+           padding: 0;
+           margin: 0;
+       }
+       .summary-item {
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           padding: 12px 10px;
+           border-bottom: 1px solid #eee;
+           font-size: clamp(1.15rem, 4.2vw, 1.35rem);
+       }
+       .summary-item:last-child { border-bottom: none; }
+       .summary-word { font-weight: bold; color: #222; }
+       .badge-correct, .badge-cue, .badge-repeat {
+           padding: 5px 12px;
+           border-radius: 20px;
+           font-weight: bold;
+           font-size: 0.9em;
+           white-space: nowrap;
+       }
+       .badge-correct { background: #d4edda; color: #155724; }
+       .badge-cue { background: #fff3cd; color: #856404; }
+       .badge-repeat { background: #f8d7da; color: #721c24; }
+
+       /* 治療師臨床記錄頁樣式 */
+       #therapist-panel {
+           display: none;
+           width: 100%;
+           max-width: 600px;
+           background: #fff;
+           border: 2px solid #5c6bc0;
+           border-radius: 14px;
+           padding: 18px;
+           box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+           margin: 14px 0;
+           text-align: left;
+           box-sizing: border-box;
+       }
+       .therapist-title {
+           font-size: 1.35em;
+           font-weight: bold;
+           color: #3f51b5;
+           margin-bottom: 12px;
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+       }
+       .btn-close-panel {
+           background: #e9ecef;
+           color: #495057;
+           border: none;
+           border-radius: 8px;
+           padding: 6px 12px;
+           font-size: 0.85em;
+           font-weight: bold;
+           cursor: pointer;
+       }
+       .btn-close-panel:hover { background: #dee2e6; }
+       .therapist-field {
+           margin-bottom: 12px;
+       }
+       .therapist-field label {
+           display: block;
+           font-weight: bold;
+           margin-bottom: 6px;
+           font-size: 1.05em;
+           color: #444;
+       }
+       .therapist-input, .therapist-textarea {
+           width: 100%;
+           padding: 10px 12px;
+           border: 1px solid #ccc;
+           border-radius: 8px;
+           font-size: 1.05em;
+           font-family: inherit;
+           box-sizing: border-box;
+       }
+       .therapist-textarea {
+           min-height: 85px;
+           resize: vertical;
+       }
+       .therapist-report-box {
+           background: #f8f9fa;
+           border: 1px solid #e2e6ea;
+           border-radius: 8px;
+           padding: 12px;
+           font-size: 0.98em;
+           line-height: 1.55;
+           white-space: pre-wrap;
+           color: #222;
+           margin-bottom: 12px;
+       }
+       .therapist-btn-row {
+           display: flex;
+           gap: 10px;
+           flex-wrap: wrap;
+       }
+       .btn-copy {
+           background: #00897b;
+           padding: 12px 20px;
+           font-size: 1.1em;
+           flex: 1;
+       }
+       .btn-copy:hover { background: #00695c; }
+       .btn-save {
+           background: #5c6bc0;
+           padding: 12px 20px;
+           font-size: 1.1em;
+           flex: 1;
+       }
+       .btn-save:hover { background: #3f51b5; }
+       .history-section {
+           margin-top: 16px;
+           padding-top: 12px;
+           border-top: 1px dashed #ccc;
+       }
+       .history-item {
+           display: flex;
+           justify-content: space-between;
+           align-items: flex-start;
+           gap: 10px;
+           background: #f4f5f9;
+           padding: 10px 12px;
+           border-radius: 8px;
+           margin-bottom: 8px;
+           font-size: 0.95em;
+           line-height: 1.45;
+       }
+       .history-text {
+           flex: 1;
+           word-break: break-word;
+       }
+       .btn-delete-record {
+           background: #ffebee;
+           color: #c62828;
+           border: 1px solid #ffcdd2;
+           border-radius: 6px;
+           padding: 4px 10px;
+           font-size: 0.88em;
+           font-weight: bold;
+           cursor: pointer;
+           white-space: nowrap;
+           flex-shrink: 0;
+       }
+       .btn-delete-record:hover {
+           background: #ffcdd2;
+       }
+
+       /* 進度條樣式 */
+       .progress-bar-container{
+           width:100%;
+           max-width:800px;
+           margin-top:auto;
+           padding:10px;
+           background:#e9ecef;
+           border-top:1px solid #ddd;
+           box-sizing:border-box;
+           position: relative;
+           z-index: 1;
+       }
+       .progress-track{
+           position:relative;
+           width:100%;
+           height:38px;
+           background:#dee2e6;
+           border-radius:6px;
+           overflow:hidden;
+       }
+       #progress-bar{
+           height:100%;
+           width:0%;
+           background:#ffc107;
+           transition:width .5s, background-color .3s;
+       }
+       #progress-text{
+           position:absolute;
+           inset:0;
+           display:flex;
+           align-items:center;
+           justify-content:center;
+           font-weight:bold;
+           font-size:1.3em;
+           color:#333;
+           pointer-events:none;
+       }
+   </style>
+</head>
+<body>
+   <canvas id="fireworks-canvas"></canvas>
+
+   <div class="container">
+       <!-- 主頁低調設定按鈕：點擊可直接查看訓練紀錄 -->
+       <button id="quick-records-btn" title="查看訓練記錄" aria-label="查看訓練記錄">⚙️</button>
+
+       <h1>命名練習：水果</h1>
+       <div id="status-badge" class="status-idle">準備中...</div>
+       <img id="item-image" src="" alt="目標物品圖片" style="display:none">
+       <button id="cue-button" class="btn-base" style="display:none">提示</button>
+       <div id="message">開啟麥克風及聲音權限</div>
+       
+       <div id="summary-container">
+           <div class="summary-header" id="summary-score">練習記錄</div>
+           <ul class="summary-list" id="summary-list"></ul>
+       </div>
+
+       <!-- 治療師記錄頁 -->
+       <div id="therapist-panel">
+           <div class="therapist-title">
+               <span>📋 治療師訓練記錄頁</span>
+               <button id="close-therapist-btn" class="btn-close-panel">✕ 關閉</button>
+           </div>
+           <div id="current-session-fields">
+               <div class="therapist-field">
+                   <label for="patient-name">訓練者姓名 / 床號 / 院舍（選填）：</label>
+                   <input type="text" id="patient-name" class="therapist-input" placeholder="例如：陳伯伯 / 床號 / 院舍">
+               </div>
+               <div class="therapist-field">
+                   <label>本次自動評估摘要：</label>
+                   <div id="therapist-auto-report" class="therapist-report-box"></div>
+               </div>
+               <div class="therapist-field">
+                   <label for="therapist-notes">臨床觀察與備註：</label>
+                   <textarea id="therapist-notes" class="therapist-textarea" placeholder="記錄構音清晰度、反應延遲時間、語意替代情況或輔助策略..."></textarea>
+               </div>
+               <div class="therapist-btn-row">
+                   <button id="save-record-btn" class="btn-base btn-save">💾 儲存本機記錄</button>
+                   <button id="copy-report-btn" class="btn-base btn-copy">📋 一鍵複製報告</button>
+               </div>
+           </div>
+           <div class="history-section" id="history-section">
+               <strong>過往訓練存檔（最近 10 次｜自動即日清除）：</strong>
+               <div id="history-list" style="margin-top:8px;"></div>
+           </div>
+       </div>
+
+       <button id="perm-button" class="btn-base">🎤 開啟麥克風及聲音權限</button>
+       
+       <div class="action-buttons">
+           <button id="review-wrong-button" class="btn-base">🔄 重溫做錯嘅題目</button>
+           <button id="start-button" class="btn-base">開始練習</button>
+           <button id="therapist-toggle-btn" class="btn-base">📋 治療師記錄頁</button>
+       </div>
+   </div>
+   <div class="progress-bar-container">
+       <div class="progress-track">
+           <div id="progress-bar"></div>
+           <div id="progress-text">0/6</div>
+       </div>
+   </div>
+
+   <script>
+       const ANSWER_TIME_LIMIT_MS = 10000;
+       const REPEAT_TIME_LIMIT_MS = 8000;
+       const STORAGE_KEY = 'st_naming_fruit_records_v1';
+
+       const allQuestions = [
+           {word:"蘋果",image:"蘋果.jpg",phonemic_cue:"蘋",correct_aliases:["蘋果"]},
+           {word:"香蕉",image:"香蕉.jpg",phonemic_cue:"香",correct_aliases:["香蕉","蕉"]},
+           {word:"芒果",image:"芒果.jpg",phonemic_cue:"芒",correct_aliases:["芒果","芒"]},
+           {word:"士多啤梨",image:"士多啤梨.jpg",phonemic_cue:"士",correct_aliases:["士多啤梨","草莓"]},
+           {word:"奇異果",image:"奇異果.jpg",phonemic_cue:"奇",correct_aliases:["奇異果","獼猴桃"]},
+           {word:"西瓜",image:"西瓜.jpg",phonemic_cue:"西",correct_aliases:["西瓜"]}
+       ];
+
+       let activeQuestions = [...allQuestions];
+       let currentQuestionIndex = 0;
+       let currentCueLevel = 0;
+       let timer = null;
+       let listenDelayTimer = null;
+       let speakFallbackTimer = null;
+       let correctAnswered = false;
+       let isWaitingForAnswer = false;
+       let isRepeatStage = false;
+       let isSpeakingNow = false;
+       let listenStartTime = 0;
+       let cueLock = false;
+       let speakCancelToken = 0;
+       let preferredVoice = null;
+       let resultsRecord = [];
+       let wakeLock = null;
+       let recognition = null;
+
+       const imageElement = document.getElementById('item-image');
+       const messageElement = document.getElementById('message');
+       const progressBarElement = document.getElementById('progress-bar');
+       const progressTextElement = document.getElementById('progress-text');
+       const cueButton = document.getElementById('cue-button');
+       const permButton = document.getElementById('perm-button');
+       const startButton = document.getElementById('start-button');
+       const reviewWrongButton = document.getElementById('review-wrong-button');
+       const quickRecordsBtn = document.getElementById('quick-records-btn');
+       const therapistToggleBtn = document.getElementById('therapist-toggle-btn');
+       const closeTherapistBtn = document.getElementById('close-therapist-btn');
+       const therapistPanel = document.getElementById('therapist-panel');
+       const currentSessionFields = document.getElementById('current-session-fields');
+       const therapistAutoReport = document.getElementById('therapist-auto-report');
+       const patientNameInput = document.getElementById('patient-name');
+       const therapistNotesInput = document.getElementById('therapist-notes');
+       const saveRecordBtn = document.getElementById('save-record-btn');
+       const copyReportBtn = document.getElementById('copy-report-btn');
+       const historySection = document.getElementById('history-section');
+       const historyList = document.getElementById('history-list');
+       const statusBadge = document.getElementById('status-badge');
+       const summaryContainer = document.getElementById('summary-container');
+       const summaryList = document.getElementById('summary-list');
+       const summaryScore = document.getElementById('summary-score');
+       const synth = window.speechSynthesis || null;
+
+       /* ================= 滿分煙花慶祝特效 ================= */
+       const fwCanvas = document.getElementById('fireworks-canvas');
+       const fwCtx = fwCanvas.getContext('2d');
+       let fwParticles = [];
+       let fwAnimId = null;
+       let fwLaunchTimer = null;
+
+       function resizeFireworksCanvas() {
+           fwCanvas.width = window.innerWidth;
+           fwCanvas.height = window.innerHeight;
+       }
+       window.addEventListener('resize', resizeFireworksCanvas);
+
+       function createFireworkBurst(x, y) {
+           const colors = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#007aff', '#af52de', '#ff2d55'];
+           const color = colors[Math.floor(Math.random() * colors.length)];
+           const count = 48;
+           for (let i = 0; i < count; i++) {
+               const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.2;
+               const speed = 2.5 + Math.random() * 4.5;
+               fwParticles.push({
+                   x, y,
+                   vx: Math.cos(angle) * speed,
+                   vy: Math.sin(angle) * speed,
+                   alpha: 1,
+                   decay: 0.015 + Math.random() * 0.012,
+                   color,
+                   radius: 2.5 + Math.random() * 2.5
+               });
+           }
+       }
+
+       function startFireworksCelebration() {
+           stopFireworksCelebration();
+           resizeFireworksCanvas();
+           fwCanvas.style.display = 'block';
+           fwParticles = [];
+
+           createFireworkBurst(fwCanvas.width * 0.3, fwCanvas.height * 0.32);
+           createFireworkBurst(fwCanvas.width * 0.7, fwCanvas.height * 0.28);
+
+           let bursts = 0;
+           fwLaunchTimer = setInterval(() => {
+               bursts++;
+               const rx = fwCanvas.width * (0.2 + Math.random() * 0.6);
+               const ry = fwCanvas.height * (0.18 + Math.random() * 0.35);
+               createFireworkBurst(rx, ry);
+               if (bursts >= 7) {
+                   clearInterval(fwLaunchTimer);
+                   fwLaunchTimer = null;
+               }
+           }, 650);
+
+           function renderLoop() {
+               fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+               for (let i = fwParticles.length - 1; i >= 0; i--) {
+                   const p = fwParticles[i];
+                   p.x += p.vx;
+                   p.y += p.vy;
+                   p.vy += 0.06;
+                   p.vx *= 0.985;
+                   p.alpha -= p.decay;
+
+                   if (p.alpha <= 0) {
+                       fwParticles.splice(i, 1);
+                       continue;
+                   }
+                   fwCtx.save();
+                   fwCtx.globalAlpha = p.alpha;
+                   fwCtx.fillStyle = p.color;
+                   fwCtx.beginPath();
+                   fwCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                   fwCtx.fill();
+                   fwCtx.restore();
+               }
+
+               if (fwParticles.length > 0 || fwLaunchTimer !== null) {
+                   fwAnimId = requestAnimationFrame(renderLoop);
+               } else {
+                   stopFireworksCelebration();
+               }
+           }
+           fwAnimId = requestAnimationFrame(renderLoop);
+       }
+
+       function stopFireworksCelebration() {
+           clearInterval(fwLaunchTimer);
+           fwLaunchTimer = null;
+           if (fwAnimId) {
+               cancelAnimationFrame(fwAnimId);
+               fwAnimId = null;
+           }
+           fwParticles = [];
+           fwCanvas.style.display = 'none';
+       }
+       /* ==================================================== */
+
+       function shuffleArray(arr) {
+           for (let i = arr.length - 1; i > 0; i--) {
+               const j = Math.floor(Math.random() * (i + 1));
+               [arr[i], arr[j]] = [arr[j], arr[i]];
+           }
+       }
+
+       function preloadImages() {
+           allQuestions.forEach(q => { new Image().src = q.image; });
+       }
+
+       async function requestWakeLock() {
+           if ('wakeLock' in navigator) {
+               try {
+                   wakeLock = await navigator.wakeLock.request('screen');
+                   wakeLock.addEventListener('release', () => { wakeLock = null; });
+               } catch (err) {}
+           }
+       }
+
+       function releaseWakeLock() {
+           if (wakeLock !== null) {
+               wakeLock.release().then(() => { wakeLock = null; }).catch(() => {});
+           }
+       }
+
+       document.addEventListener('visibilitychange', async () => {
+           if (document.visibilityState === 'visible' && startButton.style.display === 'none' && permButton.style.display === 'none') {
+               await requestWakeLock();
+           }
+       });
+
+       function loadBestCantoneseVoice() {
+           if (!synth) return;
+           try {
+               const hkVoices = synth.getVoices().filter(v => v.lang.toLowerCase().includes('zh-hk') || v.lang.toLowerCase().includes('yue'));
+               if (hkVoices.length > 0) {
+                   preferredVoice =
+                       hkVoices.find(v => /enhanced|premium|natural/i.test(v.name)) ||
+                       hkVoices.find(v => /sinji/i.test(v.name)) ||
+                       hkVoices[0];
+               }
+           } catch (e) {}
+       }
+       if (synth && synth.onvoiceschanged !== undefined) {
+           synth.onvoiceschanged = loadBestCantoneseVoice;
+       }
+       loadBestCantoneseVoice();
+
+       function unlockSpeechSynthesis() {
+           if (!synth) return;
+           try {
+               loadBestCantoneseVoice();
+               const silentUtt = new SpeechSynthesisUtterance(' ');
+               silentUtt.lang = 'zh-HK';
+               if (preferredVoice) silentUtt.voice = preferredVoice;
+               silentUtt.volume = 0;
+               synth.speak(silentUtt);
+           } catch (e) {}
+       }
+
+       function checkRecognitionSupport(){
+           const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+           if(!SpeechRec){
+               messageElement.textContent="瀏覽器唔支援語音辨識，建議使用 Safari 或 Chrome";
+               permButton.disabled=true;
+               startButton.disabled=true;
+               return false;
+           }
+           return true;
+       }
+
+       permButton.addEventListener('click', async () => {
+           if (!checkRecognitionSupport()) return;
+           unlockSpeechSynthesis();
+
+           permButton.disabled = true;
+           permButton.textContent = "正在開啟權限...";
+
+           try {
+               if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                   stream.getTracks().forEach(track => track.stop());
+               }
+               permButton.style.display = 'none';
+               startButton.style.display = 'block';
+               messageElement.textContent = "✅ 已準備好，請按「開始練習」";
+           } catch (err) {
+               permButton.disabled = false;
+               permButton.textContent = "🎤 重新開啟麥克風權限";
+               messageElement.textContent = "⚠️ 未能開啟麥克風，請允許使用麥克風或檢查網址是否 HTTPS";
+           }
+       });
+
+       function setVisualStatus(state) {
+           statusBadge.style.display = 'inline-block';
+           statusBadge.className = '';
+           imageElement.classList.remove('listening-highlight');
+
+           if (state === 'speaking') {
+               statusBadge.textContent = '🔊 系統發問中...';
+               statusBadge.classList.add('status-speaking');
+           } else if (state === 'listening') {
+               statusBadge.textContent = isRepeatStage ? '🎤 請跟住讀一次...' : '🎤 請讀出答案...';
+               statusBadge.classList.add('status-listening');
+               imageElement.classList.add('listening-highlight');
+           } else if (state === 'idle') {
+               statusBadge.textContent = '⏳ 準備中...';
+               statusBadge.classList.add('status-idle');
+           } else if (state === 'hidden') {
+               statusBadge.style.display = 'none';
+           }
+       }
+
+       function setupRecognitionInstance(){
+           const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+           if(!SpeechRec) return;
+
+           if(recognition){
+               try{
+                   recognition.onresult = null;
+                   recognition.onend = null;
+                   recognition.abort();
+               }catch(e){}
+           }
+           recognition = new SpeechRec();
+           recognition.lang = 'zh-HK';
+           recognition.interimResults = true;
+           recognition.continuous = false;
+
+           recognition.onresult = e => {
+               if(!isWaitingForAnswer || correctAnswered) return;
+
+               let transcript = '';
+               let isFinal = false;
+               for (let i = e.resultIndex; i < e.results.length; i++) {
+                   transcript += e.results[i][0].transcript;
+                   if (e.results[i].isFinal) isFinal = true;
+               }
+               transcript = transcript.trim();
+               if(!transcript) return;
+
+               const q = activeQuestions[currentQuestionIndex];
+               const isMatch = q.correct_aliases.some(a => transcript.toLowerCase().includes(a.toLowerCase()));
+
+               if (isMatch || (!isSpeakingNow && isFinal)) {
+                   isWaitingForAnswer = false;
+                   clearTimeout(timer);
+                   clearTimeout(listenDelayTimer);
+                   setVisualStatus('idle');
+                   checkAnswer(transcript);
+               }
+           };
+
+           recognition.onend = () => {
+               if(isWaitingForAnswer && !correctAnswered){
+                   clearTimeout(listenDelayTimer);
+                   listenDelayTimer = setTimeout(() => {
+                       if(isWaitingForAnswer && !correctAnswered){
+                           try {
+                               setupRecognitionInstance();
+                               recognition.start();
+                               if (!isSpeakingNow) setVisualStatus('listening');
+                           } catch(err) {}
+                       }
+                   }, 300);
+               }
+           };
+       }
+
+       function createNaturalUtterance(txt, rate = 0.92, pitch = 1.08) {
+           const u = new SpeechSynthesisUtterance(txt);
+           u.lang = 'zh-HK';
+           if (preferredVoice) u.voice = preferredVoice;
+           u.rate = rate;
+           u.pitch = pitch;
+           return u;
+       }
+
+       function speak(text, callback, allowBargeIn = false){
+           clearTimeout(speakFallbackTimer);
+           speakCancelToken++;
+           const currentToken = speakCancelToken;
+
+           if(!synth){
+               setVisualStatus('idle');
+               if(callback) callback();
+               return;
+           }
+           try {
+               if(synth.speaking || synth.pending) synth.cancel();
+           } catch (e) {}
+
+           isSpeakingNow = true;
+           if (!allowBargeIn) {
+               try{ recognition?.abort(); }catch(e){}
+           }
+           setVisualStatus('speaking');
+
+           let finished = false;
+           const done = () => {
+               if(finished || currentToken !== speakCancelToken) return;
+               finished = true;
+               clearTimeout(speakFallbackTimer);
+               isSpeakingNow = false;
+               if (!allowBargeIn) setVisualStatus('idle');
+               if(callback) callback();
+           };
+
+           speakFallbackTimer = setTimeout(done, 8000);
+
+           setTimeout(() => {
+               if(finished || currentToken !== speakCancelToken) return;
+
+               if(currentCueLevel === 1 && text === ""){
+                    const ch = activeQuestions[currentQuestionIndex].phonemic_cue;
+                    const a = createNaturalUtterance("提示一下，呢個係", 0.92, 1.08);
+                    const b = createNaturalUtterance(ch, 0.6, 1.05);
+                    a.onend = () => {
+                        setTimeout(() => {
+                            if(!finished && currentToken === speakCancelToken) synth.speak(b);
+                        }, 220);
+                    };
+                    b.onend = done;
+                    synth.speak(a);
+                    return;
+               }
+
+               const segments = text.split(/[，。！？、]/).map(s => s.trim()).filter(s => s.length > 0);
+               if (segments.length === 0) {
+                   done();
+                   return;
+               }
+
+               let idx = 0;
+               function speakNextSegment() {
+                   if (finished || currentToken !== speakCancelToken) return;
+                   if (idx >= segments.length) {
+                       done();
+                       return;
+                   }
+                   const seg = segments[idx];
+                   const isSingleTargetWord = (isRepeatStage && idx === segments.length - 1);
+                   const u = createNaturalUtterance(seg, isSingleTargetWord ? 0.72 : 0.92, 1.08);
+                   u.onend = () => {
+                       idx++;
+                       setTimeout(speakNextSegment, 220);
+                   };
+                   synth.speak(u);
+               }
+
+               speakNextSegment();
+           }, 50);
+       }
+
+       function updateProgress(){
+           const displayIndex = Math.max(0, currentQuestionIndex);
+           const p = (displayIndex / activeQuestions.length) * 100;
+           progressBarElement.style.width = p + '%';
+           progressTextElement.textContent = displayIndex + '/' + activeQuestions.length;
+           if(displayIndex === activeQuestions.length) progressBarElement.style.backgroundColor = '#28a745';
+       }
+
+       function beginImmediateListening() {
+           if (correctAnswered) return;
+           clearTimeout(listenDelayTimer);
+           isWaitingForAnswer = true;
+           listenStartTime = Date.now();
+           try {
+               setupRecognitionInstance();
+               recognition.start();
+           } catch(e) {}
+       }
+
+       function startAnswerTimer(durationMs = ANSWER_TIME_LIMIT_MS){
+           if(correctAnswered || !isWaitingForAnswer) return;
+           clearTimeout(timer);
+
+           listenStartTime = Date.now();
+           setVisualStatus('listening');
+
+           timer = setTimeout(() => {
+               if(correctAnswered || !isWaitingForAnswer) return;
+               isWaitingForAnswer = false;
+               try{ recognition?.abort(); }catch(e){}
+               setVisualStatus('idle');
+
+               if (isRepeatStage) handleRepeatTimeout();
+               else setTimeout(moveToNextCue, 600);
+           }, durationMs);
+       }
+
+       function checkAnswer(ans){
+           const q = activeQuestions[currentQuestionIndex];
+           const matchedAlias = q.correct_aliases.find(a => ans.toLowerCase().includes(a.toLowerCase()));
+           const elapsed = Date.now() - listenStartTime;
+
+           if(matchedAlias){
+                correctAnswered = true;
+                speakCancelToken++;
+                try{ recognition?.abort(); }catch(e){}
+                try{ if(synth && synth.speaking) synth.cancel(); }catch(e){}
+                isSpeakingNow = false;
+                cueButton.style.display = 'none';
+
+                const spokenWord = (q.word === "士多啤梨" && matchedAlias === "草莓") ? "草莓" : q.word;
+
+                if (isRepeatStage) {
+                    recordResult(q, 'repeat_success', spokenWord);
+                    setTimeout(() => handleRepeatCorrect(spokenWord), 100);
+                } else {
+                    recordResult(q, currentCueLevel === 0 ? 'independent' : 'cued', spokenWord);
+                    setTimeout(() => handleCorrectAnswer(spokenWord), 100);
+                }
+           }else{
+                try{ recognition?.abort(); }catch(e){}
+                if(elapsed < 1200){
+                    isWaitingForAnswer = true;
+                    startAnswerTimer(isRepeatStage ? REPEAT_TIME_LIMIT_MS : ANSWER_TIME_LIMIT_MS);
+                    return;
+                }
+
+                if (isRepeatStage) handleRepeatTimeout();
+                else setTimeout(moveToNextCue, 1000);
+           }
+       }
+
+       function recordResult(questionObj, status, displayWord = questionObj.word) {
+           if (!resultsRecord.some(r => r.question.word === questionObj.word)) {
+               resultsRecord.push({ question: questionObj, word: displayWord, status });
+           }
+       }
+
+       function handleCorrectAnswer(w){
+           currentCueLevel = 0;
+           isRepeatStage = false;
+           messageElement.textContent = w;
+           const praise = ["啱喇", "好叻呀", "答啱晒", "冇錯"][Math.floor(Math.random()*4)];
+           speak(`${praise}！呢個就係${w}`, () => setTimeout(moveToNextQuestion, 900), false);
+       }
+
+       function handleRepeatCorrect(w){
+           currentCueLevel = 0;
+           isRepeatStage = false;
+           messageElement.textContent = w;
+           const praise = [
+               `啱喇！讀得好清楚，呢個就係${w}`,
+               `好叻呀！跟得非常之啱，係${w}`,
+               `冇錯！好標準呀，呢個就係${w}`
+           ][Math.floor(Math.random()*3)];
+           speak(praise, () => setTimeout(moveToNextQuestion, 900), false);
+       }
+
+       function handleRepeatTimeout(){
+           const q = activeQuestions[currentQuestionIndex];
+           recordResult(q, 'repeat_missed', q.word);
+           isRepeatStage = false;
+           currentCueLevel = 0;
+           speak(`唔緊要，記住呢個係${q.word}，我哋試下下一題`, () => setTimeout(moveToNextQuestion, 800), false);
+       }
+
+       function moveToNextCue(){
+           clearTimeout(timer);
+           clearTimeout(listenDelayTimer);
+           isWaitingForAnswer = false;
+
+           if(correctAnswered) return;
+           currentCueLevel++;
+           const q = activeQuestions[currentQuestionIndex];
+           messageElement.textContent = "";
+           if(currentCueLevel === 1) {
+               beginImmediateListening();
+               speak("", () => startAnswerTimer(ANSWER_TIME_LIMIT_MS), true);
+           } else {
+               cueButton.style.display = 'none';
+               handleFinalAnswer(q.word);
+           }
+       }
+
+       function handleFinalAnswer(w){
+           clearTimeout(timer);
+           clearTimeout(listenDelayTimer);
+           isWaitingForAnswer = false;
+           isRepeatStage = true;
+           messageElement.textContent = w;
+           beginImmediateListening();
+           speak(`呢個係${w}，你試下讀一次，${w}`, () => startAnswerTimer(REPEAT_TIME_LIMIT_MS), true);
+       }
+
+       function moveToNextQuestion(){
+           clearTimeout(timer);
+           clearTimeout(listenDelayTimer);
+           isWaitingForAnswer = false;
+           isRepeatStage = false;
+           currentQuestionIndex++;
+           currentCueLevel = 0;
+           correctAnswered = false;
+           updateProgress();
+           if(currentQuestionIndex < activeQuestions.length) loadQuestion(currentQuestionIndex);
+           else handleCompletion();
+       }
+
+       function loadQuestion(i){
+           const q = activeQuestions[i];
+           imageElement.src = q.image;
+           imageElement.style.display = 'block';
+           cueButton.style.display = 'block';
+           messageElement.textContent = "";
+
+           beginImmediateListening();
+           speak("呢個咩嚟架？", () => startAnswerTimer(ANSWER_TIME_LIMIT_MS), true);
+       }
+
+       /* ================= 治療師記錄頁邏輯（自動即日清除 + 逐筆刪除） ================= */
+       function getTodayKey() {
+           const d = new Date();
+           return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+       }
+
+       function loadTodayRecords() {
+           try {
+               const today = getTodayKey();
+               const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+               const todayOnly = raw.filter(item => item.dayKey === today);
+               if (todayOnly.length !== raw.length) {
+                   localStorage.setItem(STORAGE_KEY, JSON.stringify(todayOnly));
+               }
+               return todayOnly;
+           } catch (e) {
+               return [];
+           }
+       }
+
+       function deleteRecordById(recordId) {
+           try {
+               const saved = loadTodayRecords();
+               const updated = saved.filter(item => item.id !== recordId);
+               localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+               renderHistoryList();
+           } catch (e) {}
+       }
+
+       function buildClinicalReportText() {
+           const now = new Date();
+           const dateStr = now.toLocaleDateString('zh-HK') + ' ' + now.toLocaleTimeString('zh-HK', {hour: '2-digit', minute:'2-digit'});
+           const total = activeQuestions.length;
+           const indList = resultsRecord.filter(r => r.status === 'independent').map(r => r.word);
+           const cueList = resultsRecord.filter(r => r.status === 'cued').map(r => r.word);
+           const repOkList = resultsRecord.filter(r => r.status === 'repeat_success').map(r => r.word);
+           const missList = resultsRecord.filter(r => r.status === 'repeat_missed').map(r => r.word);
+
+           const accRate = Math.round((indList.length / total) * 100);
+           const totalPassRate = Math.round(((indList.length + cueList.length) / total) * 100);
+           const pName = patientNameInput.value.trim();
+           const notes = therapistNotesInput.value.trim();
+
+           let report = `【命名訓練記錄｜類別：水果】\n`;
+           if (pName) report += `訓練者：${pName}\n`;
+           report += `日期時間：${dateStr}\n`;
+           report += `自主命名正確率：${indList.length}/${total} (${accRate}%)\n`;
+           report += `連提示總正確率：${indList.length + cueList.length}/${total} (${totalPassRate}%)\n`;
+           report += `----------------------------\n`;
+           report += `• 自主答對：${indList.length ? indList.join('、') : '無'}\n`;
+           report += `• 音素提示後答對：${cueList.length ? cueList.join('、') : '無'}\n`;
+           report += `• 仿說跟讀成功：${repOkList.length ? repOkList.join('、') : '無'}\n`;
+           report += `• 需再加強項目：${missList.length ? missList.join('、') : '無'}`;
+           if (notes) report += `\n----------------------------\n臨床備註：${notes}`;
+           return report;
+       }
+
+       function renderHistoryList() {
+           const saved = loadTodayRecords();
+           historySection.style.display = 'block';
+           historyList.innerHTML = '';
+
+           if (saved.length === 0) {
+               const emptyDiv = document.createElement('div');
+               emptyDiv.style.color = '#777';
+               emptyDiv.style.fontSize = '0.95em';
+               emptyDiv.style.padding = '6px 0';
+               emptyDiv.textContent = '今日暫時未有已儲存嘅訓練記錄。';
+               historyList.appendChild(emptyDiv);
+               return;
+           }
+
+           saved.slice(0, 10).forEach((entry, idx) => {
+               const div = document.createElement('div');
+               div.className = 'history-item';
+
+               const textSpan = document.createElement('span');
+               textSpan.className = 'history-text';
+               textSpan.textContent = entry.summary;
+
+               const delBtn = document.createElement('button');
+               delBtn.className = 'btn-delete-record';
+               delBtn.textContent = '🗑️ 刪除';
+               delBtn.title = '刪除此筆記錄';
+               delBtn.addEventListener('click', () => {
+                   if (confirm('確定要刪除此筆訓練記錄嗎？')) {
+                       if (entry.id) {
+                           deleteRecordById(entry.id);
+                       } else {
+                           const updated = saved.filter((_, i) => i !== idx);
+                           localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                           renderHistoryList();
+                       }
+                   }
+               });
+
+               div.appendChild(textSpan);
+               div.appendChild(delBtn);
+               historyList.appendChild(div);
+           });
+       }
+
+       function openTherapistPanel(showCurrentSession = true) {
+           currentSessionFields.style.display = showCurrentSession ? 'block' : 'none';
+           if (showCurrentSession) {
+               therapistAutoReport.textContent = buildClinicalReportText();
+           }
+           renderHistoryList();
+           therapistPanel.style.display = 'block';
+           therapistPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+       }
+
+       quickRecordsBtn.addEventListener('click', () => {
+           const isCurrentlyOpen = therapistPanel.style.display === 'block';
+           if (isCurrentlyOpen) {
+               therapistPanel.style.display = 'none';
+           } else {
+               const hasCompletedSession = resultsRecord.length > 0 && currentQuestionIndex >= activeQuestions.length;
+               openTherapistPanel(hasCompletedSession);
+           }
+       });
+
+       therapistToggleBtn.addEventListener('click', () => {
+           const isHidden = therapistPanel.style.display === 'none' || therapistPanel.style.display === '';
+           if (isHidden) {
+               openTherapistPanel(true);
+           } else {
+               therapistPanel.style.display = 'none';
+           }
+       });
+
+       closeTherapistBtn.addEventListener('click', () => {
+           therapistPanel.style.display = 'none';
+       });
+
+       patientNameInput.addEventListener('input', () => {
+           therapistAutoReport.textContent = buildClinicalReportText();
+       });
+       therapistNotesInput.addEventListener('input', () => {
+           therapistAutoReport.textContent = buildClinicalReportText();
+       });
+
+       saveRecordBtn.addEventListener('click', () => {
+           try {
+               const saved = loadTodayRecords();
+               const now = new Date();
+               const dateStr = now.toLocaleDateString('zh-HK') + ' ' + now.toLocaleTimeString('zh-HK', {hour: '2-digit', minute:'2-digit'});
+               const indCount = resultsRecord.filter(r => r.status === 'independent').length;
+               const cueCount = resultsRecord.filter(r => r.status === 'cued').length;
+               const pName = patientNameInput.value.trim() || '未填寫資料';
+               const noteStr = therapistNotesInput.value.trim() ? `｜備註：${therapistNotesInput.value.trim()}` : '';
+               const summary = `[${dateStr}] ${pName} — 自主 ${indCount}/${activeQuestions.length}，提示 ${cueCount}/${activeQuestions.length}${noteStr}`;
+
+               saved.unshift({
+                   id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                   dayKey: getTodayKey(),
+                   date: dateStr,
+                   summary,
+                   fullReport: buildClinicalReportText()
+               });
+               localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, 10)));
+               renderHistoryList();
+
+               saveRecordBtn.textContent = '✅ 已儲存記錄';
+               setTimeout(() => { saveRecordBtn.textContent = '💾 儲存本機記錄'; }, 2000);
+           } catch (e) {
+               alert('儲存失敗，瀏覽器可能處於無痕模式。');
+           }
+       });
+
+       copyReportBtn.addEventListener('click', async () => {
+           const text = buildClinicalReportText();
+           try {
+               await navigator.clipboard.writeText(text);
+               copyReportBtn.textContent = '✅ 已複製報告';
+               setTimeout(() => { copyReportBtn.textContent = '📋 一鍵複製報告'; }, 2000);
+           } catch (e) {
+               const ta = document.createElement('textarea');
+               ta.value = text;
+               document.body.appendChild(ta);
+               ta.select();
+               document.execCommand('copy');
+               document.body.removeChild(ta);
+               copyReportBtn.textContent = '✅ 已複製報告';
+               setTimeout(() => { copyReportBtn.textContent = '📋 一鍵複製報告'; }, 2000);
+           }
+       });
+       /* ==================================================== */
+
+       function renderSummaryTable() {
+           summaryList.innerHTML = '';
+           let independentCount = 0;
+           let cuedCount = 0;
+
+           resultsRecord.forEach(item => {
+               const li = document.createElement('li');
+               li.className = 'summary-item';
+
+               const wordSpan = document.createElement('span');
+               wordSpan.className = 'summary-word';
+               wordSpan.textContent = item.word;
+
+               const statusSpan = document.createElement('span');
+               if (item.status === 'independent') {
+                   independentCount++;
+                   statusSpan.className = 'badge-correct';
+                   statusSpan.textContent = '✅ 自己答啱';
+               } else if (item.status === 'cued') {
+                   cuedCount++;
+                   statusSpan.className = 'badge-cue';
+                   statusSpan.textContent = '💡 提示後答啱';
+               } else if (item.status === 'repeat_success') {
+                   statusSpan.className = 'badge-repeat';
+                   statusSpan.textContent = '🗣️ 跟讀答啱';
+               } else {
+                   statusSpan.className = 'badge-repeat';
+                   statusSpan.textContent = '🔄 需再練習';
+               }
+
+               li.appendChild(wordSpan);
+               li.appendChild(statusSpan);
+               summaryList.appendChild(li);
+           });
+
+           const totalCorrect = independentCount + cuedCount;
+           const isFullScore = (independentCount === activeQuestions.length);
+
+           if (isFullScore) {
+               summaryScore.textContent = `🎉 滿分過關！全部 ${activeQuestions.length} 題自己答啱！`;
+               startFireworksCelebration();
+           } else {
+               summaryScore.textContent = `答對：${totalCorrect} / ${activeQuestions.length} 題`;
+           }
+           summaryContainer.style.display = 'block';
+
+           const wrongItems = resultsRecord.filter(item => item.status !== 'independent');
+           if (wrongItems.length > 0) {
+               reviewWrongButton.style.display = 'block';
+               reviewWrongButton.textContent = `🔄 重溫做錯嘅題目 (${wrongItems.length}題)`;
+           } else {
+               reviewWrongButton.style.display = 'none';
+           }
+
+           therapistToggleBtn.style.display = 'block';
+           therapistAutoReport.textContent = buildClinicalReportText();
+       }
+
+       function handleCompletion(){
+           imageElement.style.display = 'none';
+           cueButton.style.display = 'none';
+           setVisualStatus('hidden');
+           releaseWakeLock();
+
+           const independentCount = resultsRecord.filter(item => item.status === 'independent').length;
+           const isFullScore = (independentCount === activeQuestions.length);
+
+           messageElement.textContent = isFullScore ? "太犀利喇！滿分完成練習！" : "做得非常好，完成練習喇！";
+           renderSummaryTable();
+
+           const closingSpeech = isFullScore
+               ? "太犀利喇！你全部都自己答啱晒，滿分完成呢個練習！"
+               : "做得非常好，我哋已經完成呢個練習喇！";
+           speak(closingSpeech, null, false);
+
+           startButton.style.display = 'block';
+           startButton.textContent = '🔁 再練習全部題目';
+       }
+
+       function startPracticeSession(questionList) {
+           if(!checkRecognitionSupport()) return;
+           stopFireworksCelebration();
+           unlockSpeechSynthesis();
+           requestWakeLock();
+
+           activeQuestions = [...questionList];
+           shuffleArray(activeQuestions);
+
+           startButton.style.display = 'none';
+           reviewWrongButton.style.display = 'none';
+           therapistToggleBtn.style.display = 'none';
+           therapistPanel.style.display = 'none';
+           summaryContainer.style.display = 'none';
+           therapistNotesInput.value = '';
+           resultsRecord = [];
+           currentQuestionIndex = -1;
+           progressBarElement.style.backgroundColor = '#ffc107';
+           updateProgress();
+           moveToNextQuestion();
+       }
+
+       startButton.addEventListener('click', () => startPracticeSession(allQuestions));
+
+       reviewWrongButton.addEventListener('click', () => {
+           const wrongQuestions = resultsRecord
+               .filter(item => item.status !== 'independent')
+               .map(item => item.question);
+           if (wrongQuestions.length > 0) startPracticeSession(wrongQuestions);
+       });
+
+       cueButton.addEventListener('click', () => {
+           if(correctAnswered || cueLock || isRepeatStage) return;
+           cueLock = true;
+           setTimeout(() => { cueLock = false; }, 800);
+           isWaitingForAnswer = false;
+           clearTimeout(timer);
+           clearTimeout(listenDelayTimer);
+           clearTimeout(speakFallbackTimer);
+           speakCancelToken++;
+           try{ recognition?.abort(); }catch(e){}
+           try{ if(synth && synth.speaking) synth.cancel(); }catch(e){}
+           isSpeakingNow = false;
+           setVisualStatus('idle');
+           setTimeout(moveToNextCue, 100);
+       });
+
+       document.addEventListener('DOMContentLoaded', () => {
+           loadTodayRecords();
+           updateProgress();
+           preloadImages();
+       });
+   </script>
+</body>
+</html>
