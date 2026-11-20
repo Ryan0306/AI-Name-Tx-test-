@@ -39,6 +39,28 @@
            position: relative;
            z-index: 1;
        }
+       /* 右上角低調設定按鈕（供治療師直接跳轉查看紀錄） */
+       #quick-records-btn {
+           position: absolute;
+           top: 14px;
+           right: 8px;
+           background: transparent;
+           color: #999;
+           border: none;
+           font-size: 1.45rem;
+           padding: 6px 10px;
+           border-radius: 8px;
+           cursor: pointer;
+           opacity: 0.55;
+           transition: opacity 0.2s, background-color 0.2s;
+           touch-action: manipulation;
+       }
+       #quick-records-btn:hover {
+           opacity: 1;
+           background-color: rgba(0, 0, 0, 0.05);
+           color: #555;
+       }
+
        h1{margin-bottom:12px;font-size:2em;}
 
        /* 視覺狀態回饋標籤 */
@@ -90,7 +112,6 @@
            box-shadow: 0 0 20px rgba(40, 167, 69, 0.35);
        }
 
-       /* 還原原本答案顯示大小 */
        #message{
            font-size: clamp(1.5rem, 5vw, 2.1rem);
            color: #333;
@@ -108,7 +129,6 @@
            white-space: nowrap;
            touch-action: manipulation;
        }
-       /* 還原原本提示按鈕大小 */
        #cue-button{
            background:#007bff;
            padding: 14px 40px;
@@ -232,6 +252,17 @@
            justify-content: space-between;
            align-items: center;
        }
+       .btn-close-panel {
+           background: #e9ecef;
+           color: #495057;
+           border: none;
+           border-radius: 8px;
+           padding: 6px 12px;
+           font-size: 0.85em;
+           font-weight: bold;
+           cursor: pointer;
+       }
+       .btn-close-panel:hover { background: #dee2e6; }
        .therapist-field {
            margin-bottom: 12px;
        }
@@ -291,12 +322,35 @@
            border-top: 1px dashed #ccc;
        }
        .history-item {
+           display: flex;
+           justify-content: space-between;
+           align-items: flex-start;
+           gap: 10px;
            background: #f4f5f9;
            padding: 10px 12px;
            border-radius: 8px;
            margin-bottom: 8px;
            font-size: 0.95em;
            line-height: 1.45;
+       }
+       .history-text {
+           flex: 1;
+           word-break: break-word;
+       }
+       .btn-delete-record {
+           background: #ffebee;
+           color: #c62828;
+           border: 1px solid #ffcdd2;
+           border-radius: 6px;
+           padding: 4px 10px;
+           font-size: 0.88em;
+           font-weight: bold;
+           cursor: pointer;
+           white-space: nowrap;
+           flex-shrink: 0;
+       }
+       .btn-delete-record:hover {
+           background: #ffcdd2;
        }
 
        /* 進度條樣式 */
@@ -342,6 +396,9 @@
    <canvas id="fireworks-canvas"></canvas>
 
    <div class="container">
+       <!-- 主頁低調設定按鈕：點擊可直接查看訓練紀錄 -->
+       <button id="quick-records-btn" title="查看訓練記錄" aria-label="查看訓練記錄">⚙️</button>
+
        <h1>命名練習：水果</h1>
        <div id="status-badge" class="status-idle">準備中...</div>
        <img id="item-image" src="" alt="目標物品圖片" style="display:none">
@@ -357,24 +414,27 @@
        <div id="therapist-panel">
            <div class="therapist-title">
                <span>📋 治療師訓練記錄頁</span>
+               <button id="close-therapist-btn" class="btn-close-panel">✕ 關閉</button>
            </div>
-           <div class="therapist-field">
-               <label for="patient-name">訓練者姓名 / 床號 / 院舍（選填）：</label>
-               <input type="text" id="patient-name" class="therapist-input" placeholder="例如：陳伯伯 / 床號 / 院舍">
+           <div id="current-session-fields">
+               <div class="therapist-field">
+                   <label for="patient-name">訓練者姓名 / 床號 / 院舍（選填）：</label>
+                   <input type="text" id="patient-name" class="therapist-input" placeholder="例如：陳伯伯 / 床號 / 院舍">
+               </div>
+               <div class="therapist-field">
+                   <label>本次自動評估摘要：</label>
+                   <div id="therapist-auto-report" class="therapist-report-box"></div>
+               </div>
+               <div class="therapist-field">
+                   <label for="therapist-notes">臨床觀察與備註：</label>
+                   <textarea id="therapist-notes" class="therapist-textarea" placeholder="記錄構音清晰度、反應延遲時間、語意替代情況或輔助策略..."></textarea>
+               </div>
+               <div class="therapist-btn-row">
+                   <button id="save-record-btn" class="btn-base btn-save">💾 儲存本機記錄</button>
+                   <button id="copy-report-btn" class="btn-base btn-copy">📋 一鍵複製報告</button>
+               </div>
            </div>
-           <div class="therapist-field">
-               <label>本次自動評估摘要：</label>
-               <div id="therapist-auto-report" class="therapist-report-box"></div>
-           </div>
-           <div class="therapist-field">
-               <label for="therapist-notes">臨床觀察與備註：</label>
-               <textarea id="therapist-notes" class="therapist-textarea" placeholder="記錄構音清晰度、反應延遲時間、語意替代情況或輔助策略..."></textarea>
-           </div>
-           <div class="therapist-btn-row">
-               <button id="save-record-btn" class="btn-base btn-save">💾 儲存本機記錄</button>
-               <button id="copy-report-btn" class="btn-base btn-copy">📋 一鍵複製報告</button>
-           </div>
-           <div class="history-section" id="history-section" style="display:none;">
+           <div class="history-section" id="history-section">
                <strong>過往訓練存檔（最近 10 次｜自動即日清除）：</strong>
                <div id="history-list" style="margin-top:8px;"></div>
            </div>
@@ -435,8 +495,11 @@
        const permButton = document.getElementById('perm-button');
        const startButton = document.getElementById('start-button');
        const reviewWrongButton = document.getElementById('review-wrong-button');
+       const quickRecordsBtn = document.getElementById('quick-records-btn');
        const therapistToggleBtn = document.getElementById('therapist-toggle-btn');
+       const closeTherapistBtn = document.getElementById('close-therapist-btn');
        const therapistPanel = document.getElementById('therapist-panel');
+       const currentSessionFields = document.getElementById('current-session-fields');
        const therapistAutoReport = document.getElementById('therapist-auto-report');
        const patientNameInput = document.getElementById('patient-name');
        const therapistNotesInput = document.getElementById('therapist-notes');
@@ -960,7 +1023,7 @@
            speak("呢個咩嚟架？", () => startAnswerTimer(ANSWER_TIME_LIMIT_MS), true);
        }
 
-       /* ================= 治療師記錄頁邏輯（自動即日清除） ================= */
+       /* ================= 治療師記錄頁邏輯（自動即日清除 + 逐筆刪除） ================= */
        function getTodayKey() {
            const d = new Date();
            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -978,6 +1041,15 @@
            } catch (e) {
                return [];
            }
+       }
+
+       function deleteRecordById(recordId) {
+           try {
+               const saved = loadTodayRecords();
+               const updated = saved.filter(item => item.id !== recordId);
+               localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+               renderHistoryList();
+           } catch (e) {}
        }
 
        function buildClinicalReportText() {
@@ -1010,28 +1082,82 @@
 
        function renderHistoryList() {
            const saved = loadTodayRecords();
-           if (saved.length === 0) {
-               historySection.style.display = 'none';
-               return;
-           }
            historySection.style.display = 'block';
            historyList.innerHTML = '';
-           saved.slice(0, 10).forEach(entry => {
+
+           if (saved.length === 0) {
+               const emptyDiv = document.createElement('div');
+               emptyDiv.style.color = '#777';
+               emptyDiv.style.fontSize = '0.95em';
+               emptyDiv.style.padding = '6px 0';
+               emptyDiv.textContent = '今日暫時未有已儲存嘅訓練記錄。';
+               historyList.appendChild(emptyDiv);
+               return;
+           }
+
+           saved.slice(0, 10).forEach((entry, idx) => {
+               const recordId = entry.id || `legacy_${idx}_${entry.date}`;
                const div = document.createElement('div');
                div.className = 'history-item';
-               div.textContent = entry.summary;
+
+               const textSpan = document.createElement('span');
+               textSpan.className = 'history-text';
+               textSpan.textContent = entry.summary;
+
+               const delBtn = document.createElement('button');
+               delBtn.className = 'btn-delete-record';
+               delBtn.textContent = '🗑️ 刪除';
+               delBtn.title = '刪除此筆記錄';
+               delBtn.addEventListener('click', () => {
+                   if (confirm('確定要刪除此筆訓練記錄嗎？')) {
+                       if (entry.id) {
+                           deleteRecordById(entry.id);
+                       } else {
+                           const updated = saved.filter((_, i) => i !== idx);
+                           localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                           renderHistoryList();
+                       }
+                   }
+               });
+
+               div.appendChild(textSpan);
+               div.appendChild(delBtn);
                historyList.appendChild(div);
            });
        }
 
+       function openTherapistPanel(showCurrentSession = true) {
+           currentSessionFields.style.display = showCurrentSession ? 'block' : 'none';
+           if (showCurrentSession) {
+               therapistAutoReport.textContent = buildClinicalReportText();
+           }
+           renderHistoryList();
+           therapistPanel.style.display = 'block';
+           therapistPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+       }
+
+       // 主頁右上角低調按鈕：隨時跳轉查看或管理紀錄
+       quickRecordsBtn.addEventListener('click', () => {
+           const isCurrentlyOpen = therapistPanel.style.display === 'block';
+           if (isCurrentlyOpen) {
+               therapistPanel.style.display = 'none';
+           } else {
+               const hasCompletedSession = resultsRecord.length > 0 && currentQuestionIndex >= activeQuestions.length;
+               openTherapistPanel(hasCompletedSession);
+           }
+       });
+
        therapistToggleBtn.addEventListener('click', () => {
            const isHidden = therapistPanel.style.display === 'none' || therapistPanel.style.display === '';
-           therapistPanel.style.display = isHidden ? 'block' : 'none';
            if (isHidden) {
-               therapistAutoReport.textContent = buildClinicalReportText();
-               renderHistoryList();
-               therapistPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+               openTherapistPanel(true);
+           } else {
+               therapistPanel.style.display = 'none';
            }
+       });
+
+       closeTherapistBtn.addEventListener('click', () => {
+           therapistPanel.style.display = 'none';
        });
 
        patientNameInput.addEventListener('input', () => {
@@ -1052,7 +1178,13 @@
                const noteStr = therapistNotesInput.value.trim() ? `｜備註：${therapistNotesInput.value.trim()}` : '';
                const summary = `[${dateStr}] ${pName} — 自主 ${indCount}/${activeQuestions.length}，提示 ${cueCount}/${activeQuestions.length}${noteStr}`;
 
-               saved.unshift({ dayKey: getTodayKey(), date: dateStr, summary, fullReport: buildClinicalReportText() });
+               saved.unshift({
+                   id: 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                   dayKey: getTodayKey(),
+                   date: dateStr,
+                   summary,
+                   fullReport: buildClinicalReportText()
+               });
                localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, 10)));
                renderHistoryList();
 
@@ -1209,7 +1341,7 @@
        });
 
        document.addEventListener('DOMContentLoaded', () => {
-           loadTodayRecords(); // 頁面載入時自動清理隔日舊存檔
+           loadTodayRecords();
            updateProgress();
            preloadImages();
        });
