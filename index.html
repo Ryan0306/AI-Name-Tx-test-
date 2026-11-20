@@ -77,7 +77,7 @@
        #item-image{
            max-width:90%;
            height:auto;
-           max-height:46vh;
+           max-height:48vh;
            border:5px solid #fff;
            box-shadow:0 4px 15px rgba(0,0,0,.1);
            border-radius:12px;
@@ -90,33 +90,30 @@
            box-shadow: 0 0 20px rgba(40, 167, 69, 0.35);
        }
 
-       /* 放大答案顯示字體 */
+       /* 還原原本答案顯示大小 */
        #message{
-           font-size: clamp(2.3rem, 7vw, 3.1rem);
-           color: #1a1a1a;
-           min-height: 75px;
-           margin: 14px 0;
+           font-size: clamp(1.5rem, 5vw, 2.1rem);
+           color: #333;
+           min-height: 60px;
+           margin: 12px 0;
            font-weight: bold;
-           line-height: 1.35;
-           letter-spacing: 2px;
+           line-height: 1.4;
        }
 
        .btn-base {
            color: #fff;
            border: none;
-           border-radius: 14px;
+           border-radius: 12px;
            cursor: pointer;
            white-space: nowrap;
            touch-action: manipulation;
-           font-weight: bold;
        }
-       /* 放大提示按鈕，方便長者點按 */
+       /* 還原原本提示按鈕大小 */
        #cue-button{
            background:#007bff;
-           padding: 18px 56px;
-           font-size: clamp(1.55rem, 5.2vw, 1.9rem);
-           margin: 12px 0;
-           box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+           padding: 14px 40px;
+           font-size: 1.5em;
+           margin: 10px 0;
        }
        #cue-button:hover{background:#0056b3}
 
@@ -348,7 +345,7 @@
        <h1>命名練習：水果</h1>
        <div id="status-badge" class="status-idle">準備中...</div>
        <img id="item-image" src="" alt="目標物品圖片" style="display:none">
-       <button id="cue-button" class="btn-base" style="display:none">💡 提示</button>
+       <button id="cue-button" class="btn-base" style="display:none">提示</button>
        <div id="message">開啟麥克風及聲音權限</div>
        
        <div id="summary-container">
@@ -362,8 +359,8 @@
                <span>📋 治療師訓練記錄頁</span>
            </div>
            <div class="therapist-field">
-               <label for="patient-name">訓練者姓名 / 編號（選填）：</label>
-               <input type="text" id="patient-name" class="therapist-input" placeholder="例如：陳伯伯 / P012">
+               <label for="patient-name">訓練者姓名 / 床號 / 院舍（選填）：</label>
+               <input type="text" id="patient-name" class="therapist-input" placeholder="例如：陳伯伯 / 床號 / 院舍">
            </div>
            <div class="therapist-field">
                <label>本次自動評估摘要：</label>
@@ -378,7 +375,7 @@
                <button id="copy-report-btn" class="btn-base btn-copy">📋 一鍵複製報告</button>
            </div>
            <div class="history-section" id="history-section" style="display:none;">
-               <strong>過往訓練存檔（最近 5 次）：</strong>
+               <strong>過往訓練存檔（最近 10 次｜自動即日清除）：</strong>
                <div id="history-list" style="margin-top:8px;"></div>
            </div>
        </div>
@@ -963,7 +960,26 @@
            speak("呢個咩嚟架？", () => startAnswerTimer(ANSWER_TIME_LIMIT_MS), true);
        }
 
-       /* ================= 治療師記錄頁邏輯 ================= */
+       /* ================= 治療師記錄頁邏輯（自動即日清除） ================= */
+       function getTodayKey() {
+           const d = new Date();
+           return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+       }
+
+       function loadTodayRecords() {
+           try {
+               const today = getTodayKey();
+               const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+               const todayOnly = raw.filter(item => item.dayKey === today);
+               if (todayOnly.length !== raw.length) {
+                   localStorage.setItem(STORAGE_KEY, JSON.stringify(todayOnly));
+               }
+               return todayOnly;
+           } catch (e) {
+               return [];
+           }
+       }
+
        function buildClinicalReportText() {
            const now = new Date();
            const dateStr = now.toLocaleDateString('zh-HK') + ' ' + now.toLocaleTimeString('zh-HK', {hour: '2-digit', minute:'2-digit'});
@@ -978,7 +994,7 @@
            const pName = patientNameInput.value.trim();
            const notes = therapistNotesInput.value.trim();
 
-           let report = `【對質命名訓練記錄｜類別：水果】\n`;
+           let report = `【命名訓練記錄｜類別：水果】\n`;
            if (pName) report += `訓練者：${pName}\n`;
            report += `日期時間：${dateStr}\n`;
            report += `自主命名正確率：${indList.length}/${total} (${accRate}%)\n`;
@@ -993,21 +1009,19 @@
        }
 
        function renderHistoryList() {
-           try {
-               const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-               if (saved.length === 0) {
-                   historySection.style.display = 'none';
-                   return;
-               }
-               historySection.style.display = 'block';
-               historyList.innerHTML = '';
-               saved.slice(0, 5).forEach(entry => {
-                   const div = document.createElement('div');
-                   div.className = 'history-item';
-                   div.textContent = entry.summary;
-                   historyList.appendChild(div);
-               });
-           } catch (e) {}
+           const saved = loadTodayRecords();
+           if (saved.length === 0) {
+               historySection.style.display = 'none';
+               return;
+           }
+           historySection.style.display = 'block';
+           historyList.innerHTML = '';
+           saved.slice(0, 10).forEach(entry => {
+               const div = document.createElement('div');
+               div.className = 'history-item';
+               div.textContent = entry.summary;
+               historyList.appendChild(div);
+           });
        }
 
        therapistToggleBtn.addEventListener('click', () => {
@@ -1029,17 +1043,17 @@
 
        saveRecordBtn.addEventListener('click', () => {
            try {
-               const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+               const saved = loadTodayRecords();
                const now = new Date();
                const dateStr = now.toLocaleDateString('zh-HK') + ' ' + now.toLocaleTimeString('zh-HK', {hour: '2-digit', minute:'2-digit'});
                const indCount = resultsRecord.filter(r => r.status === 'independent').length;
                const cueCount = resultsRecord.filter(r => r.status === 'cued').length;
-               const pName = patientNameInput.value.trim() || '未填寫姓名';
+               const pName = patientNameInput.value.trim() || '未填寫資料';
                const noteStr = therapistNotesInput.value.trim() ? `｜備註：${therapistNotesInput.value.trim()}` : '';
                const summary = `[${dateStr}] ${pName} — 自主 ${indCount}/${activeQuestions.length}，提示 ${cueCount}/${activeQuestions.length}${noteStr}`;
 
-               saved.unshift({ date: dateStr, summary, fullReport: buildClinicalReportText() });
-               localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, 20)));
+               saved.unshift({ dayKey: getTodayKey(), date: dateStr, summary, fullReport: buildClinicalReportText() });
+               localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, 10)));
                renderHistoryList();
 
                saveRecordBtn.textContent = '✅ 已儲存記錄';
@@ -1195,6 +1209,7 @@
        });
 
        document.addEventListener('DOMContentLoaded', () => {
+           loadTodayRecords(); // 頁面載入時自動清理隔日舊存檔
            updateProgress();
            preloadImages();
        });
