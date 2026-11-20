@@ -16,6 +16,16 @@
            background:#f4f4f9;
            color:#333;
        }
+       /* 滿分煙花畫布（不阻擋點擊操作） */
+       #fireworks-canvas {
+           position: fixed;
+           inset: 0;
+           width: 100%;
+           height: 100%;
+           pointer-events: none;
+           z-index: 999;
+           display: none;
+       }
        .container{
            width:92%;
            max-width:800px;
@@ -26,6 +36,8 @@
            align-items:center;
            flex-grow:1;
            box-sizing:border-box;
+           position: relative;
+           z-index: 1;
        }
        h1{margin-bottom:12px;font-size:2em;}
 
@@ -65,7 +77,7 @@
        #item-image{
            max-width:90%;
            height:auto;
-           max-height:48vh;
+           max-height:46vh;
            border:5px solid #fff;
            box-shadow:0 4px 15px rgba(0,0,0,.1);
            border-radius:12px;
@@ -78,27 +90,33 @@
            box-shadow: 0 0 20px rgba(40, 167, 69, 0.35);
        }
 
+       /* 放大答案顯示字體 */
        #message{
-           font-size: clamp(1.5rem, 5vw, 2.1rem);
-           min-height:60px;
-           margin:12px 0;
-           font-weight:bold;
-           line-height:1.4;
+           font-size: clamp(2.3rem, 7vw, 3.1rem);
+           color: #1a1a1a;
+           min-height: 75px;
+           margin: 14px 0;
+           font-weight: bold;
+           line-height: 1.35;
+           letter-spacing: 2px;
        }
 
        .btn-base {
            color: #fff;
            border: none;
-           border-radius: 12px;
+           border-radius: 14px;
            cursor: pointer;
            white-space: nowrap;
            touch-action: manipulation;
+           font-weight: bold;
        }
+       /* 放大提示按鈕，方便長者點按 */
        #cue-button{
            background:#007bff;
-           padding:14px 40px;
-           font-size:1.5em;
-           margin:10px 0;
+           padding: 18px 56px;
+           font-size: clamp(1.55rem, 5.2vw, 1.9rem);
+           margin: 12px 0;
+           box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
        }
        #cue-button:hover{background:#0056b3}
 
@@ -136,6 +154,15 @@
            display:none;
        }
        #start-button:hover{background:#1e7e34}
+
+       #therapist-toggle-btn{
+           background:#5c6bc0;
+           padding: 14px 32px;
+           font-size: clamp(1.15rem, 4.2vw, 1.45rem);
+           display:none;
+           box-shadow: 0 4px 10px rgba(92, 107, 192, 0.25);
+       }
+       #therapist-toggle-btn:hover{background:#3f51b5}
 
        /* 成績總結表樣式 */
        #summary-container {
@@ -185,7 +212,97 @@
        .badge-cue { background: #fff3cd; color: #856404; }
        .badge-repeat { background: #f8d7da; color: #721c24; }
 
-       /* 進度條樣式：文字永遠置中，進度條作為背景填滿 */
+       /* 治療師臨床記錄頁樣式 */
+       #therapist-panel {
+           display: none;
+           width: 100%;
+           max-width: 600px;
+           background: #fff;
+           border: 2px solid #5c6bc0;
+           border-radius: 14px;
+           padding: 18px;
+           box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+           margin: 14px 0;
+           text-align: left;
+           box-sizing: border-box;
+       }
+       .therapist-title {
+           font-size: 1.35em;
+           font-weight: bold;
+           color: #3f51b5;
+           margin-bottom: 12px;
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+       }
+       .therapist-field {
+           margin-bottom: 12px;
+       }
+       .therapist-field label {
+           display: block;
+           font-weight: bold;
+           margin-bottom: 6px;
+           font-size: 1.05em;
+           color: #444;
+       }
+       .therapist-input, .therapist-textarea {
+           width: 100%;
+           padding: 10px 12px;
+           border: 1px solid #ccc;
+           border-radius: 8px;
+           font-size: 1.05em;
+           font-family: inherit;
+           box-sizing: border-box;
+       }
+       .therapist-textarea {
+           min-height: 85px;
+           resize: vertical;
+       }
+       .therapist-report-box {
+           background: #f8f9fa;
+           border: 1px solid #e2e6ea;
+           border-radius: 8px;
+           padding: 12px;
+           font-size: 0.98em;
+           line-height: 1.55;
+           white-space: pre-wrap;
+           color: #222;
+           margin-bottom: 12px;
+       }
+       .therapist-btn-row {
+           display: flex;
+           gap: 10px;
+           flex-wrap: wrap;
+       }
+       .btn-copy {
+           background: #00897b;
+           padding: 12px 20px;
+           font-size: 1.1em;
+           flex: 1;
+       }
+       .btn-copy:hover { background: #00695c; }
+       .btn-save {
+           background: #5c6bc0;
+           padding: 12px 20px;
+           font-size: 1.1em;
+           flex: 1;
+       }
+       .btn-save:hover { background: #3f51b5; }
+       .history-section {
+           margin-top: 16px;
+           padding-top: 12px;
+           border-top: 1px dashed #ccc;
+       }
+       .history-item {
+           background: #f4f5f9;
+           padding: 10px 12px;
+           border-radius: 8px;
+           margin-bottom: 8px;
+           font-size: 0.95em;
+           line-height: 1.45;
+       }
+
+       /* 進度條樣式 */
        .progress-bar-container{
            width:100%;
            max-width:800px;
@@ -194,6 +311,8 @@
            background:#e9ecef;
            border-top:1px solid #ddd;
            box-sizing:border-box;
+           position: relative;
+           z-index: 1;
        }
        .progress-track{
            position:relative;
@@ -223,11 +342,13 @@
    </style>
 </head>
 <body>
+   <canvas id="fireworks-canvas"></canvas>
+
    <div class="container">
        <h1>命名練習：水果</h1>
        <div id="status-badge" class="status-idle">準備中...</div>
        <img id="item-image" src="" alt="目標物品圖片" style="display:none">
-       <button id="cue-button" class="btn-base" style="display:none">提示</button>
+       <button id="cue-button" class="btn-base" style="display:none">💡 提示</button>
        <div id="message">開啟麥克風及聲音權限</div>
        
        <div id="summary-container">
@@ -235,9 +356,37 @@
            <ul class="summary-list" id="summary-list"></ul>
        </div>
 
+       <!-- 治療師記錄頁 -->
+       <div id="therapist-panel">
+           <div class="therapist-title">
+               <span>📋 治療師訓練記錄頁</span>
+           </div>
+           <div class="therapist-field">
+               <label for="patient-name">訓練者姓名 / 編號（選填）：</label>
+               <input type="text" id="patient-name" class="therapist-input" placeholder="例如：陳伯伯 / P012">
+           </div>
+           <div class="therapist-field">
+               <label>本次自動評估摘要：</label>
+               <div id="therapist-auto-report" class="therapist-report-box"></div>
+           </div>
+           <div class="therapist-field">
+               <label for="therapist-notes">臨床觀察與備註：</label>
+               <textarea id="therapist-notes" class="therapist-textarea" placeholder="記錄構音清晰度、反應延遲時間、語意替代情況或輔助策略..."></textarea>
+           </div>
+           <div class="therapist-btn-row">
+               <button id="save-record-btn" class="btn-base btn-save">💾 儲存本機記錄</button>
+               <button id="copy-report-btn" class="btn-base btn-copy">📋 一鍵複製報告</button>
+           </div>
+           <div class="history-section" id="history-section" style="display:none;">
+               <strong>過往訓練存檔（最近 5 次）：</strong>
+               <div id="history-list" style="margin-top:8px;"></div>
+           </div>
+       </div>
+
        <button id="perm-button" class="btn-base">🎤 開啟麥克風及聲音權限</button>
        
        <div class="action-buttons">
+           <button id="therapist-toggle-btn" class="btn-base">📋 治療師記錄頁</button>
            <button id="review-wrong-button" class="btn-base">🔄 重溫做錯嘅題目</button>
            <button id="start-button" class="btn-base">開始練習</button>
        </div>
@@ -252,6 +401,7 @@
    <script>
        const ANSWER_TIME_LIMIT_MS = 10000;
        const REPEAT_TIME_LIMIT_MS = 8000;
+       const STORAGE_KEY = 'st_naming_fruit_records_v1';
 
        const allQuestions = [
            {word:"蘋果",image:"蘋果.jpg",phonemic_cue:"蘋",correct_aliases:["蘋果"]},
@@ -288,11 +438,117 @@
        const permButton = document.getElementById('perm-button');
        const startButton = document.getElementById('start-button');
        const reviewWrongButton = document.getElementById('review-wrong-button');
+       const therapistToggleBtn = document.getElementById('therapist-toggle-btn');
+       const therapistPanel = document.getElementById('therapist-panel');
+       const therapistAutoReport = document.getElementById('therapist-auto-report');
+       const patientNameInput = document.getElementById('patient-name');
+       const therapistNotesInput = document.getElementById('therapist-notes');
+       const saveRecordBtn = document.getElementById('save-record-btn');
+       const copyReportBtn = document.getElementById('copy-report-btn');
+       const historySection = document.getElementById('history-section');
+       const historyList = document.getElementById('history-list');
        const statusBadge = document.getElementById('status-badge');
        const summaryContainer = document.getElementById('summary-container');
        const summaryList = document.getElementById('summary-list');
        const summaryScore = document.getElementById('summary-score');
        const synth = window.speechSynthesis || null;
+
+       /* ================= 滿分煙花慶祝特效 ================= */
+       const fwCanvas = document.getElementById('fireworks-canvas');
+       const fwCtx = fwCanvas.getContext('2d');
+       let fwParticles = [];
+       let fwAnimId = null;
+       let fwLaunchTimer = null;
+
+       function resizeFireworksCanvas() {
+           fwCanvas.width = window.innerWidth;
+           fwCanvas.height = window.innerHeight;
+       }
+       window.addEventListener('resize', resizeFireworksCanvas);
+
+       function createFireworkBurst(x, y) {
+           const colors = ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#007aff', '#af52de', '#ff2d55'];
+           const color = colors[Math.floor(Math.random() * colors.length)];
+           const count = 48;
+           for (let i = 0; i < count; i++) {
+               const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.2;
+               const speed = 2.5 + Math.random() * 4.5;
+               fwParticles.push({
+                   x, y,
+                   vx: Math.cos(angle) * speed,
+                   vy: Math.sin(angle) * speed,
+                   alpha: 1,
+                   decay: 0.015 + Math.random() * 0.012,
+                   color,
+                   radius: 2.5 + Math.random() * 2.5
+               });
+           }
+       }
+
+       function startFireworksCelebration() {
+           stopFireworksCelebration();
+           resizeFireworksCanvas();
+           fwCanvas.style.display = 'block';
+           fwParticles = [];
+
+           createFireworkBurst(fwCanvas.width * 0.3, fwCanvas.height * 0.32);
+           createFireworkBurst(fwCanvas.width * 0.7, fwCanvas.height * 0.28);
+
+           let bursts = 0;
+           fwLaunchTimer = setInterval(() => {
+               bursts++;
+               const rx = fwCanvas.width * (0.2 + Math.random() * 0.6);
+               const ry = fwCanvas.height * (0.18 + Math.random() * 0.35);
+               createFireworkBurst(rx, ry);
+               if (bursts >= 7) {
+                   clearInterval(fwLaunchTimer);
+                   fwLaunchTimer = null;
+               }
+           }, 650);
+
+           function renderLoop() {
+               fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+               for (let i = fwParticles.length - 1; i >= 0; i--) {
+                   const p = fwParticles[i];
+                   p.x += p.vx;
+                   p.y += p.vy;
+                   p.vy += 0.06;
+                   p.vx *= 0.985;
+                   p.alpha -= p.decay;
+
+                   if (p.alpha <= 0) {
+                       fwParticles.splice(i, 1);
+                       continue;
+                   }
+                   fwCtx.save();
+                   fwCtx.globalAlpha = p.alpha;
+                   fwCtx.fillStyle = p.color;
+                   fwCtx.beginPath();
+                   fwCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                   fwCtx.fill();
+                   fwCtx.restore();
+               }
+
+               if (fwParticles.length > 0 || fwLaunchTimer !== null) {
+                   fwAnimId = requestAnimationFrame(renderLoop);
+               } else {
+                   stopFireworksCelebration();
+               }
+           }
+           fwAnimId = requestAnimationFrame(renderLoop);
+       }
+
+       function stopFireworksCelebration() {
+           clearInterval(fwLaunchTimer);
+           fwLaunchTimer = null;
+           if (fwAnimId) {
+               cancelAnimationFrame(fwAnimId);
+               fwAnimId = null;
+           }
+           fwParticles = [];
+           fwCanvas.style.display = 'none';
+       }
+       /* ==================================================== */
 
        function shuffleArray(arr) {
            for (let i = arr.length - 1; i > 0; i--) {
@@ -707,6 +963,111 @@
            speak("呢個咩嚟架？", () => startAnswerTimer(ANSWER_TIME_LIMIT_MS), true);
        }
 
+       /* ================= 治療師記錄頁邏輯 ================= */
+       function buildClinicalReportText() {
+           const now = new Date();
+           const dateStr = now.toLocaleDateString('zh-HK') + ' ' + now.toLocaleTimeString('zh-HK', {hour: '2-digit', minute:'2-digit'});
+           const total = activeQuestions.length;
+           const indList = resultsRecord.filter(r => r.status === 'independent').map(r => r.word);
+           const cueList = resultsRecord.filter(r => r.status === 'cued').map(r => r.word);
+           const repOkList = resultsRecord.filter(r => r.status === 'repeat_success').map(r => r.word);
+           const missList = resultsRecord.filter(r => r.status === 'repeat_missed').map(r => r.word);
+
+           const accRate = Math.round((indList.length / total) * 100);
+           const totalPassRate = Math.round(((indList.length + cueList.length) / total) * 100);
+           const pName = patientNameInput.value.trim();
+           const notes = therapistNotesInput.value.trim();
+
+           let report = `【對質命名訓練記錄｜類別：水果】\n`;
+           if (pName) report += `訓練者：${pName}\n`;
+           report += `日期時間：${dateStr}\n`;
+           report += `自主命名正確率：${indList.length}/${total} (${accRate}%)\n`;
+           report += `連提示總正確率：${indList.length + cueList.length}/${total} (${totalPassRate}%)\n`;
+           report += `----------------------------\n`;
+           report += `• 自主答對：${indList.length ? indList.join('、') : '無'}\n`;
+           report += `• 音素提示後答對：${cueList.length ? cueList.join('、') : '無'}\n`;
+           report += `• 仿說跟讀成功：${repOkList.length ? repOkList.join('、') : '無'}\n`;
+           report += `• 需再加強項目：${missList.length ? missList.join('、') : '無'}`;
+           if (notes) report += `\n----------------------------\n臨床備註：${notes}`;
+           return report;
+       }
+
+       function renderHistoryList() {
+           try {
+               const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+               if (saved.length === 0) {
+                   historySection.style.display = 'none';
+                   return;
+               }
+               historySection.style.display = 'block';
+               historyList.innerHTML = '';
+               saved.slice(0, 5).forEach(entry => {
+                   const div = document.createElement('div');
+                   div.className = 'history-item';
+                   div.textContent = entry.summary;
+                   historyList.appendChild(div);
+               });
+           } catch (e) {}
+       }
+
+       therapistToggleBtn.addEventListener('click', () => {
+           const isHidden = therapistPanel.style.display === 'none' || therapistPanel.style.display === '';
+           therapistPanel.style.display = isHidden ? 'block' : 'none';
+           if (isHidden) {
+               therapistAutoReport.textContent = buildClinicalReportText();
+               renderHistoryList();
+               therapistPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+           }
+       });
+
+       patientNameInput.addEventListener('input', () => {
+           therapistAutoReport.textContent = buildClinicalReportText();
+       });
+       therapistNotesInput.addEventListener('input', () => {
+           therapistAutoReport.textContent = buildClinicalReportText();
+       });
+
+       saveRecordBtn.addEventListener('click', () => {
+           try {
+               const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+               const now = new Date();
+               const dateStr = now.toLocaleDateString('zh-HK') + ' ' + now.toLocaleTimeString('zh-HK', {hour: '2-digit', minute:'2-digit'});
+               const indCount = resultsRecord.filter(r => r.status === 'independent').length;
+               const cueCount = resultsRecord.filter(r => r.status === 'cued').length;
+               const pName = patientNameInput.value.trim() || '未填寫姓名';
+               const noteStr = therapistNotesInput.value.trim() ? `｜備註：${therapistNotesInput.value.trim()}` : '';
+               const summary = `[${dateStr}] ${pName} — 自主 ${indCount}/${activeQuestions.length}，提示 ${cueCount}/${activeQuestions.length}${noteStr}`;
+
+               saved.unshift({ date: dateStr, summary, fullReport: buildClinicalReportText() });
+               localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, 20)));
+               renderHistoryList();
+
+               saveRecordBtn.textContent = '✅ 已儲存記錄';
+               setTimeout(() => { saveRecordBtn.textContent = '💾 儲存本機記錄'; }, 2000);
+           } catch (e) {
+               alert('儲存失敗，瀏覽器可能處於無痕模式。');
+           }
+       });
+
+       copyReportBtn.addEventListener('click', async () => {
+           const text = buildClinicalReportText();
+           try {
+               await navigator.clipboard.writeText(text);
+               copyReportBtn.textContent = '✅ 已複製報告';
+               setTimeout(() => { copyReportBtn.textContent = '📋 一鍵複製報告'; }, 2000);
+           } catch (e) {
+               const ta = document.createElement('textarea');
+               ta.value = text;
+               document.body.appendChild(ta);
+               ta.select();
+               document.execCommand('copy');
+               document.body.removeChild(ta);
+               copyReportBtn.textContent = '✅ 已複製報告';
+               setTimeout(() => { copyReportBtn.textContent = '📋 一鍵複製報告'; }, 2000);
+           }
+       });
+       /* ==================================================== */
+
        function renderSummaryTable() {
            summaryList.innerHTML = '';
            let independentCount = 0;
@@ -743,7 +1104,14 @@
            });
 
            const totalCorrect = independentCount + cuedCount;
-           summaryScore.textContent = `答對：${totalCorrect} / ${activeQuestions.length} 題`;
+           const isFullScore = (independentCount === activeQuestions.length);
+
+           if (isFullScore) {
+               summaryScore.textContent = `🎉 滿分過關！全部 ${activeQuestions.length} 題自己答啱！`;
+               startFireworksCelebration();
+           } else {
+               summaryScore.textContent = `答對：${totalCorrect} / ${activeQuestions.length} 題`;
+           }
            summaryContainer.style.display = 'block';
 
            const wrongItems = resultsRecord.filter(item => item.status !== 'independent');
@@ -753,6 +1121,9 @@
            } else {
                reviewWrongButton.style.display = 'none';
            }
+
+           therapistToggleBtn.style.display = 'block';
+           therapistAutoReport.textContent = buildClinicalReportText();
        }
 
        function handleCompletion(){
@@ -760,15 +1131,25 @@
            cueButton.style.display = 'none';
            setVisualStatus('hidden');
            releaseWakeLock();
-           messageElement.textContent = "做得非常好，完成練習喇！";
+
+           const independentCount = resultsRecord.filter(item => item.status === 'independent').length;
+           const isFullScore = (independentCount === activeQuestions.length);
+
+           messageElement.textContent = isFullScore ? "太犀利喇！滿分完成練習！" : "做得非常好，完成練習喇！";
            renderSummaryTable();
-           speak("做得非常好，我哋已經完成呢個練習喇！", null, false);
+
+           const closingSpeech = isFullScore
+               ? "太犀利喇！你全部都自己答啱晒，滿分完成呢個練習！"
+               : "做得非常好，我哋已經完成呢個練習喇！";
+           speak(closingSpeech, null, false);
+
            startButton.style.display = 'block';
            startButton.textContent = '再練習全部題目';
        }
 
        function startPracticeSession(questionList) {
            if(!checkRecognitionSupport()) return;
+           stopFireworksCelebration();
            unlockSpeechSynthesis();
            requestWakeLock();
 
@@ -777,7 +1158,10 @@
 
            startButton.style.display = 'none';
            reviewWrongButton.style.display = 'none';
+           therapistToggleBtn.style.display = 'none';
+           therapistPanel.style.display = 'none';
            summaryContainer.style.display = 'none';
+           therapistNotesInput.value = '';
            resultsRecord = [];
            currentQuestionIndex = -1;
            progressBarElement.style.backgroundColor = '#ffc107';
