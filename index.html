@@ -16,7 +16,6 @@
            background:#f4f4f9;
            color:#333;
        }
-       /* 滿分煙花畫布（不阻擋點擊操作） */
        #fireworks-canvas {
            position: fixed;
            inset: 0;
@@ -39,7 +38,6 @@
            position: relative;
            z-index: 1;
        }
-       /* 右上角低調設定按鈕（供治療師直接跳轉查看紀錄） */
        #quick-records-btn {
            position: absolute;
            top: 14px;
@@ -63,7 +61,6 @@
 
        h1{margin-bottom:12px;font-size:2em;}
 
-       /* 視覺狀態回饋標籤 */
        #status-badge {
            display: none;
            padding: 10px 26px;
@@ -71,7 +68,7 @@
            font-size: clamp(1.15rem, 4.2vw, 1.35rem);
            font-weight: bold;
            margin-bottom: 15px;
-           transition: all 0.3s ease;
+           transition: background-color 0.2s ease, color 0.2s ease;
            white-space: nowrap;
        }
        .status-speaking {
@@ -105,7 +102,7 @@
            border-radius:12px;
            margin:10px auto;
            display:block;
-           transition: border-color 0.3s ease, box-shadow 0.3s ease;
+           transition: border-color 0.25s ease, box-shadow 0.25s ease;
        }
        #item-image.listening-highlight {
            border-color: #28a745;
@@ -181,7 +178,6 @@
        }
        #therapist-toggle-btn:hover{background:#3f51b5}
 
-       /* 成績總結表樣式 */
        #summary-container {
            display: none;
            width: 100%;
@@ -229,7 +225,6 @@
        .badge-cue { background: #fff3cd; color: #856404; }
        .badge-repeat { background: #f8d7da; color: #721c24; }
 
-       /* 治療師臨床記錄頁樣式 */
        #therapist-panel {
            display: none;
            width: 100%;
@@ -353,7 +348,6 @@
            background: #ffcdd2;
        }
 
-       /* 進度條樣式 */
        .progress-bar-container{
            width:100%;
            max-width:800px;
@@ -396,7 +390,6 @@
    <canvas id="fireworks-canvas"></canvas>
 
    <div class="container">
-       <!-- 主頁低調設定按鈕：點擊可直接查看訓練紀錄 -->
        <button id="quick-records-btn" title="查看訓練記錄" aria-label="查看訓練記錄">⚙️</button>
 
        <h1>命名練習：水果</h1>
@@ -410,7 +403,6 @@
            <ul class="summary-list" id="summary-list"></ul>
        </div>
 
-       <!-- 治療師記錄頁 -->
        <div id="therapist-panel">
            <div class="therapist-title">
                <span>📋 治療師訓練記錄頁</span>
@@ -473,13 +465,13 @@
        let currentQuestionIndex = 0;
        let currentCueLevel = 0;
        let timer = null;
-       let listenDelayTimer = null;
+       let restartTimer = null;
        let speakFallbackTimer = null;
        let correctAnswered = false;
        let isWaitingForAnswer = false;
        let isRepeatStage = false;
        let isSpeakingNow = false;
-       let isRecognitionRunning = false;
+       let isRecActive = false;
        let listenStartTime = 0;
        let cueLock = false;
        let speakCancelToken = 0;
@@ -487,7 +479,6 @@
        let resultsRecord = [];
        let wakeLock = null;
        let recognition = null;
-       let audioCtx = null;
 
        const imageElement = document.getElementById('item-image');
        const messageElement = document.getElementById('message');
@@ -514,52 +505,6 @@
        const summaryList = document.getElementById('summary-list');
        const summaryScore = document.getElementById('summary-score');
        const synth = window.speechSynthesis || null;
-
-       /* ================= iOS 雙向音訊通道解鎖（支援搶答） ================= */
-       function unlockIOSAudioHardware() {
-           try {
-               const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-               if (AudioContextClass) {
-                   if (!audioCtx) audioCtx = new AudioContextClass();
-                   if (audioCtx.state === 'suspended') audioCtx.resume();
-                   const buffer = audioCtx.createBuffer(1, 1, 22050);
-                   const source = audioCtx.createBufferSource();
-                   source.buffer = buffer;
-                   source.connect(audioCtx.destination);
-                   source.start(0);
-               }
-           } catch (e) {}
-
-           if (synth) {
-               try {
-                   loadBestCantoneseVoice();
-                   if (synth.paused) synth.resume();
-                   const silentUtt = new SpeechSynthesisUtterance('.');
-                   silentUtt.lang = 'zh-HK';
-                   if (preferredVoice) silentUtt.voice = preferredVoice;
-                   silentUtt.volume = 0.01;
-                   silentUtt.rate = 2.0;
-                   synth.speak(silentUtt);
-               } catch (e) {}
-           }
-       }
-
-       function stopRecognitionCleanly() {
-           isWaitingForAnswer = false;
-           isRecognitionRunning = false;
-           clearTimeout(listenDelayTimer);
-           if (recognition) {
-               try {
-                   recognition.onstart = null;
-                   recognition.onresult = null;
-                   recognition.onend = null;
-                   recognition.onerror = null;
-                   recognition.abort();
-               } catch (e) {}
-               recognition = null;
-           }
-       }
-       /* ================================================================ */
 
        /* ================= 滿分煙花慶祝特效 ================= */
        const fwCanvas = document.getElementById('fireworks-canvas');
@@ -707,36 +652,146 @@
        }
        loadBestCantoneseVoice();
 
-       function checkRecognitionSupport(){
+       /* 單例初始化語音辨識（全場複用，避免反覆銷毀重建造成 iOS 27 卡頓） */
+       function initSingleRecognition() {
+           if (recognition) return true;
            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-           if(!SpeechRec){
-               messageElement.textContent="瀏覽器唔支援語音辨識，建議使用 Safari 或 Chrome";
-               permButton.disabled=true;
-               startButton.disabled=true;
+           if (!SpeechRec) {
+               messageElement.textContent = "瀏覽器唔支援語音辨識，建議使用 Safari 或 Chrome";
+               permButton.disabled = true;
+               startButton.disabled = true;
                return false;
            }
+
+           recognition = new SpeechRec();
+           recognition.lang = 'zh-HK';
+           recognition.interimResults = true;
+           recognition.continuous = false;
+
+           recognition.onstart = () => {
+               isRecActive = true;
+           };
+
+           recognition.onresult = e => {
+               if (!isWaitingForAnswer || correctAnswered) return;
+
+               let transcript = '';
+               let isFinal = false;
+               for (let i = e.resultIndex; i < e.results.length; i++) {
+                   transcript += e.results[i][0].transcript;
+                   if (e.results[i].isFinal) isFinal = true;
+               }
+               transcript = transcript.trim();
+               if (!transcript) return;
+
+               const q = activeQuestions[currentQuestionIndex];
+               if (!q) return;
+               const isMatch = q.correct_aliases.some(a => transcript.toLowerCase().includes(a.toLowerCase()));
+
+               // 搶答過濾：系統發問期間僅放行匹配目標詞彙嘅結果；講完後則接受最終判分
+               if (isMatch || (!isSpeakingNow && isFinal)) {
+                   isWaitingForAnswer = false;
+                   clearTimeout(timer);
+                   clearTimeout(restartTimer);
+                   setVisualStatus('idle');
+                   checkAnswer(transcript);
+               }
+           };
+
+           recognition.onerror = (event) => {
+               isRecActive = false;
+               if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                   permButton.disabled = false;
+                   permButton.style.display = 'block';
+                   permButton.textContent = "🎤 重新開啟麥克風權限";
+                   startButton.style.display = 'none';
+                   messageElement.textContent = "⚠️ 麥克風權限未開啟，請喺 Safari 設定允許使用咪高峰";
+               }
+           };
+
+           recognition.onend = () => {
+               isRecActive = false;
+               if (isWaitingForAnswer && !correctAnswered) {
+                   clearTimeout(restartTimer);
+                   restartTimer = setTimeout(() => {
+                       if (isWaitingForAnswer && !correctAnswered && !isRecActive) {
+                           try {
+                               recognition.start();
+                               if (!isSpeakingNow) setVisualStatus('listening');
+                           } catch (err) {}
+                       }
+                   }, 180);
+               }
+           };
+
            return true;
        }
 
-       permButton.addEventListener('click', async () => {
-           if (!checkRecognitionSupport()) return;
-           unlockIOSAudioHardware();
+       function startListeningSafely() {
+           if (!initSingleRecognition()) return;
+           isWaitingForAnswer = true;
+           listenStartTime = Date.now();
+           if (!isRecActive) {
+               try {
+                   recognition.start();
+               } catch (e) {}
+           }
+       }
+
+       function stopListeningSafely() {
+           isWaitingForAnswer = false;
+           clearTimeout(restartTimer);
+           if (recognition && isRecActive) {
+               try {
+                   recognition.stop();
+               } catch (e) {}
+           }
+       }
+
+       /* 點擊開啟權限：極速測試（不呼叫慢速 getUserMedia 阻塞） */
+       permButton.addEventListener('click', () => {
+           if (!initSingleRecognition()) return;
 
            permButton.disabled = true;
            permButton.textContent = "正在開啟權限...";
 
-           try {
-               if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                   stream.getTracks().forEach(track => track.stop());
-               }
+           if (synth) {
+               try {
+                   loadBestCantoneseVoice();
+                   if (synth.paused) synth.resume();
+                   const u = new SpeechSynthesisUtterance(' ');
+                   u.lang = 'zh-HK';
+                   if (preferredVoice) u.voice = preferredVoice;
+                   u.volume = 0.01;
+                   synth.speak(u);
+               } catch (e) {}
+           }
+
+           let donePerm = false;
+           const finishPerm = () => {
+               if (donePerm) return;
+               donePerm = true;
+               try { recognition.stop(); } catch (e) {}
                permButton.style.display = 'none';
                startButton.style.display = 'block';
                messageElement.textContent = "✅ 已準備好，請按「開始練習」";
+           };
+
+           const origOnStart = recognition.onstart;
+           recognition.onstart = () => {
+               isRecActive = true;
+               recognition.onstart = origOnStart;
+               setTimeout(finishPerm, 80);
+           };
+
+           try {
+               recognition.start();
+               setTimeout(() => {
+                   if (!donePerm && isRecActive) finishPerm();
+               }, 600);
            } catch (err) {
-               permButton.disabled = false;
-               permButton.textContent = "🎤 重新開啟麥克風權限";
-               messageElement.textContent = "⚠️ 未能開啟麥克風，請允許使用麥克風或檢查網址是否 HTTPS";
+               recognition.onstart = origOnStart;
+               finishPerm();
            }
        });
 
@@ -760,74 +815,6 @@
            }
        }
 
-       function setupRecognitionInstance(){
-           const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-           if(!SpeechRec) return;
-
-           stopRecognitionCleanly();
-
-           recognition = new SpeechRec();
-           recognition.lang = 'zh-HK';
-           recognition.interimResults = true;
-           recognition.continuous = false;
-
-           recognition.onstart = () => {
-               isRecognitionRunning = true;
-           };
-
-           recognition.onresult = e => {
-               if(!isWaitingForAnswer || correctAnswered) return;
-
-               let transcript = '';
-               let isFinal = false;
-               for (let i = e.resultIndex; i < e.results.length; i++) {
-                   transcript += e.results[i][0].transcript;
-                   if (e.results[i].isFinal) isFinal = true;
-               }
-               transcript = transcript.trim();
-               if(!transcript) return;
-
-               const q = activeQuestions[currentQuestionIndex];
-               const isMatch = q.correct_aliases.some(a => transcript.toLowerCase().includes(a.toLowerCase()));
-
-               // 1. 系統發問／提示中（isSpeakingNow）：只要匹配目標答案（isMatch）即刻打斷搶答成功，同時過濾系統發問聲
-               // 2. 系統講完後（!isSpeakingNow）：匹配答案或句子結束（isFinal）即進入判分
-               if (isMatch || (!isSpeakingNow && isFinal)) {
-                   isWaitingForAnswer = false;
-                   clearTimeout(timer);
-                   clearTimeout(listenDelayTimer);
-                   setVisualStatus('idle');
-                   checkAnswer(transcript);
-               }
-           };
-
-           recognition.onerror = () => {
-               isRecognitionRunning = false;
-           };
-
-           recognition.onend = () => {
-               isRecognitionRunning = false;
-               if(isWaitingForAnswer && !correctAnswered){
-                   clearTimeout(listenDelayTimer);
-                   listenDelayTimer = setTimeout(() => {
-                       if(isWaitingForAnswer && !correctAnswered && !isRecognitionRunning){
-                           try {
-                               recognition.start();
-                               if (!isSpeakingNow) setVisualStatus('listening');
-                           } catch(err) {
-                               try {
-                                   setupRecognitionInstance();
-                                   isWaitingForAnswer = true;
-                                   recognition.start();
-                                   if (!isSpeakingNow) setVisualStatus('listening');
-                               } catch(e2) {}
-                           }
-                       }
-                   }, 250);
-               }
-           };
-       }
-
        function createNaturalUtterance(txt, rate = 0.92, pitch = 1.08) {
            const u = new SpeechSynthesisUtterance(txt);
            u.lang = 'zh-HK';
@@ -838,19 +825,19 @@
            return u;
        }
 
-       /* allowBargeIn = true 時保留麥克風收聽搶答，並等麥克風進入雙向模式後才播音 */
-       function speak(text, callback, allowBargeIn = false){
+       /* 整句自然朗讀（避免 iOS 27 連續多段 speak 造成卡頓與吞聲） */
+       function speak(text, callback, allowBargeIn = false) {
            clearTimeout(speakFallbackTimer);
            speakCancelToken++;
            const currentToken = speakCancelToken;
 
            if (!allowBargeIn) {
-               stopRecognitionCleanly();
+               stopListeningSafely();
            }
 
-           if(!synth){
+           if (!synth) {
                setVisualStatus('idle');
-               if(callback) callback();
+               if (callback) callback();
                return;
            }
 
@@ -864,143 +851,102 @@
 
            let finished = false;
            const done = () => {
-               if(finished || currentToken !== speakCancelToken) return;
+               if (finished || currentToken !== speakCancelToken) return;
                finished = true;
                clearTimeout(speakFallbackTimer);
                isSpeakingNow = false;
                if (!allowBargeIn) setVisualStatus('idle');
-               if(callback) callback();
+               if (callback) callback();
            };
 
-           speakFallbackTimer = setTimeout(done, 8500);
+           speakFallbackTimer = setTimeout(done, 7500);
 
-           // 若開啟搶答（麥克風剛啟動），留 150ms 俾 iOS 穩固雙向音訊通道再播音
-           const startDelay = allowBargeIn ? 150 : 80;
+           const launchSpeech = () => {
+               if (finished || currentToken !== speakCancelToken) return;
 
-           setTimeout(() => {
-               if(finished || currentToken !== speakCancelToken) return;
-
-               if(currentCueLevel === 1 && text === ""){
-                    const ch = activeQuestions[currentQuestionIndex].phonemic_cue;
-                    const a = createNaturalUtterance("提示一下，呢個係", 0.92, 1.08);
-                    const b = createNaturalUtterance(ch, 0.6, 1.05);
-                    a.onend = () => {
-                        setTimeout(() => {
-                            if(!finished && currentToken === speakCancelToken) synth.speak(b);
-                        }, 220);
-                    };
-                    a.onerror = done;
-                    b.onend = done;
-                    b.onerror = done;
-                    synth.speak(a);
-                    return;
+               if (currentCueLevel === 1 && text === "") {
+                   const ch = activeQuestions[currentQuestionIndex].phonemic_cue;
+                   const u = createNaturalUtterance(`提示一下，呢個係，${ch}`, 0.85, 1.06);
+                   u.onend = done;
+                   u.onerror = done;
+                   synth.speak(u);
+                   return;
                }
 
-               const segments = text.split(/[，。！？、]/).map(s => s.trim()).filter(s => s.length > 0);
-               if (segments.length === 0) {
+               if (!text || !text.trim()) {
                    done();
                    return;
                }
 
-               let idx = 0;
-               function speakNextSegment() {
-                   if (finished || currentToken !== speakCancelToken) return;
-                   if (idx >= segments.length) {
-                       done();
-                       return;
-                   }
-                   const seg = segments[idx];
-                   const isSingleTargetWord = (isRepeatStage && idx === segments.length - 1);
-                   const u = createNaturalUtterance(seg, isSingleTargetWord ? 0.72 : 0.92, 1.08);
-                   u.onend = () => {
-                       idx++;
-                       setTimeout(speakNextSegment, 220);
-                   };
-                   u.onerror = done;
-                   synth.speak(u);
-               }
+               const u = createNaturalUtterance(text, isRepeatStage ? 0.84 : 0.92, 1.08);
+               u.onend = done;
+               u.onerror = done;
+               synth.speak(u);
+           };
 
-               speakNextSegment();
-           }, startDelay);
+           if (allowBargeIn) {
+               startListeningSafely();
+               setTimeout(launchSpeech, 100);
+           } else {
+               setTimeout(launchSpeech, 40);
+           }
        }
 
-       function updateProgress(){
+       function updateProgress() {
            const displayIndex = Math.max(0, currentQuestionIndex);
            const p = (displayIndex / activeQuestions.length) * 100;
            progressBarElement.style.width = p + '%';
            progressTextElement.textContent = displayIndex + '/' + activeQuestions.length;
-           if(displayIndex === activeQuestions.length) progressBarElement.style.backgroundColor = '#28a745';
+           if (displayIndex === activeQuestions.length) progressBarElement.style.backgroundColor = '#28a745';
        }
 
-       /* 先啟動麥克風以便隨時搶答 */
-       function beginImmediateListening() {
+       function startAnswerTimer(durationMs = ANSWER_TIME_LIMIT_MS) {
            if (correctAnswered) return;
-           setupRecognitionInstance();
-           isWaitingForAnswer = true;
-           listenStartTime = Date.now();
-           try {
-               recognition.start();
-           } catch(e) {}
-       }
-
-       /* 語音播完後啟動倒數計時（如麥克風已開住則無縫銜接，不重新建立） */
-       function startAnswerTimer(durationMs = ANSWER_TIME_LIMIT_MS){
-           if(correctAnswered) return;
            clearTimeout(timer);
 
-           if (!isWaitingForAnswer || !recognition) {
-               setupRecognitionInstance();
-               isWaitingForAnswer = true;
-           }
-           if (!isRecognitionRunning) {
-               try { recognition.start(); } catch(e) {}
-           }
-
-           listenStartTime = Date.now();
+           startListeningSafely();
            setVisualStatus('listening');
 
            timer = setTimeout(() => {
-               if(correctAnswered || !isWaitingForAnswer) return;
-               stopRecognitionCleanly();
+               if (correctAnswered || !isWaitingForAnswer) return;
+               stopListeningSafely();
                setVisualStatus('idle');
 
                if (isRepeatStage) handleRepeatTimeout();
-               else setTimeout(moveToNextCue, 500);
+               else setTimeout(moveToNextCue, 400);
            }, durationMs);
        }
 
-       function checkAnswer(ans){
+       function checkAnswer(ans) {
            const q = activeQuestions[currentQuestionIndex];
            const matchedAlias = q.correct_aliases.find(a => ans.toLowerCase().includes(a.toLowerCase()));
            const elapsed = Date.now() - listenStartTime;
 
-           if(matchedAlias){
-                correctAnswered = true;
-                speakCancelToken++;
-                stopRecognitionCleanly();
-                try{ if(synth && synth.speaking) synth.cancel(); }catch(e){}
-                isSpeakingNow = false;
-                cueButton.style.display = 'none';
+           if (matchedAlias) {
+               correctAnswered = true;
+               speakCancelToken++;
+               stopListeningSafely();
+               try { if (synth && synth.speaking) synth.cancel(); } catch (e) {}
+               isSpeakingNow = false;
+               cueButton.style.display = 'none';
 
-                const spokenWord = (q.word === "士多啤梨" && matchedAlias === "草莓") ? "草莓" : q.word;
+               const spokenWord = (q.word === "士多啤梨" && matchedAlias === "草莓") ? "草莓" : q.word;
 
-                if (isRepeatStage) {
-                    recordResult(q, 'repeat_success', spokenWord);
-                    setTimeout(() => handleRepeatCorrect(spokenWord), 150);
-                } else {
-                    recordResult(q, currentCueLevel === 0 ? 'independent' : 'cued', spokenWord);
-                    setTimeout(() => handleCorrectAnswer(spokenWord), 150);
-                }
-           }else{
-                stopRecognitionCleanly();
-                if(elapsed < 1200){
-                    beginImmediateListening();
-                    startAnswerTimer(isRepeatStage ? REPEAT_TIME_LIMIT_MS : ANSWER_TIME_LIMIT_MS);
-                    return;
-                }
-
-                if (isRepeatStage) handleRepeatTimeout();
-                else setTimeout(moveToNextCue, 800);
+               if (isRepeatStage) {
+                   recordResult(q, 'repeat_success', spokenWord);
+                   setTimeout(() => handleRepeatCorrect(spokenWord), 100);
+               } else {
+                   recordResult(q, currentCueLevel === 0 ? 'independent' : 'cued', spokenWord);
+                   setTimeout(() => handleCorrectAnswer(spokenWord), 100);
+               }
+           } else {
+               if (elapsed < 1200) {
+                   startAnswerTimer(isRepeatStage ? REPEAT_TIME_LIMIT_MS : ANSWER_TIME_LIMIT_MS);
+                   return;
+               }
+               stopListeningSafely();
+               if (isRepeatStage) handleRepeatTimeout();
+               else setTimeout(moveToNextCue, 600);
            }
        }
 
@@ -1010,15 +956,15 @@
            }
        }
 
-       function handleCorrectAnswer(w){
+       function handleCorrectAnswer(w) {
            currentCueLevel = 0;
            isRepeatStage = false;
            messageElement.textContent = w;
-           const praise = ["啱喇", "好叻呀", "答啱晒", "冇錯"][Math.floor(Math.random()*4)];
-           speak(`${praise}！呢個就係${w}`, () => setTimeout(moveToNextQuestion, 800), false);
+           const praise = ["啱喇", "好叻呀", "答啱晒", "冇錯"][Math.floor(Math.random() * 4)];
+           speak(`${praise}！呢個就係${w}`, () => setTimeout(moveToNextQuestion, 700), false);
        }
 
-       function handleRepeatCorrect(w){
+       function handleRepeatCorrect(w) {
            currentCueLevel = 0;
            isRepeatStage = false;
            messageElement.textContent = w;
@@ -1026,28 +972,27 @@
                `啱喇！讀得好清楚，呢個就係${w}`,
                `好叻呀！跟得非常之啱，係${w}`,
                `冇錯！好標準呀，呢個就係${w}`
-           ][Math.floor(Math.random()*3)];
-           speak(praise, () => setTimeout(moveToNextQuestion, 800), false);
+           ][Math.floor(Math.random() * 3)];
+           speak(praise, () => setTimeout(moveToNextQuestion, 700), false);
        }
 
-       function handleRepeatTimeout(){
+       function handleRepeatTimeout() {
            const q = activeQuestions[currentQuestionIndex];
            recordResult(q, 'repeat_missed', q.word);
            isRepeatStage = false;
            currentCueLevel = 0;
-           speak(`唔緊要，記住呢個係${q.word}，我哋試下下一題`, () => setTimeout(moveToNextQuestion, 700), false);
+           speak(`唔緊要，記住呢個係${q.word}，我哋試下下一題`, () => setTimeout(moveToNextQuestion, 600), false);
        }
 
-       function moveToNextCue(){
+       function moveToNextCue() {
            clearTimeout(timer);
-           stopRecognitionCleanly();
+           stopListeningSafely();
 
-           if(correctAnswered) return;
+           if (correctAnswered) return;
            currentCueLevel++;
            const q = activeQuestions[currentQuestionIndex];
            messageElement.textContent = "";
-           if(currentCueLevel === 1) {
-               beginImmediateListening();
+           if (currentCueLevel === 1) {
                speak("", () => startAnswerTimer(ANSWER_TIME_LIMIT_MS), true);
            } else {
                cueButton.style.display = 'none';
@@ -1055,43 +1000,39 @@
            }
        }
 
-       /* 仿說示範期間先暫停收音（allowBargeIn = false），避免手機收到自己讀出嘅答案而誤判過關 */
-       function handleFinalAnswer(w){
+       function handleFinalAnswer(w) {
            clearTimeout(timer);
-           stopRecognitionCleanly();
+           stopListeningSafely();
            isRepeatStage = true;
            messageElement.textContent = w;
            speak(`呢個係${w}，你試下讀一次，${w}`, () => {
-               beginImmediateListening();
                startAnswerTimer(REPEAT_TIME_LIMIT_MS);
            }, false);
        }
 
-       function moveToNextQuestion(){
+       function moveToNextQuestion() {
            clearTimeout(timer);
-           stopRecognitionCleanly();
+           stopListeningSafely();
            isRepeatStage = false;
            currentQuestionIndex++;
            currentCueLevel = 0;
            correctAnswered = false;
            updateProgress();
-           if(currentQuestionIndex < activeQuestions.length) loadQuestion(currentQuestionIndex);
+           if (currentQuestionIndex < activeQuestions.length) loadQuestion(currentQuestionIndex);
            else handleCompletion();
        }
 
-       function loadQuestion(i){
+       function loadQuestion(i) {
            const q = activeQuestions[i];
            imageElement.src = q.image;
            imageElement.style.display = 'block';
            cueButton.style.display = 'block';
            messageElement.textContent = "";
 
-           // 先開麥克風（支援搶答），隔 150ms 穩固 iOS 雙向通道後播放發問語音
-           beginImmediateListening();
            speak("呢個咩嚟架？", () => startAnswerTimer(ANSWER_TIME_LIMIT_MS), true);
        }
 
-       /* ================= 治療師記錄頁邏輯（自動即日清除 + 逐筆刪除） ================= */
+       /* ================= 治療師記錄頁邏輯 ================= */
        function getTodayKey() {
            const d = new Date();
            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -1338,8 +1279,8 @@
            therapistAutoReport.textContent = buildClinicalReportText();
        }
 
-       function handleCompletion(){
-           stopRecognitionCleanly();
+       function handleCompletion() {
+           stopListeningSafely();
            imageElement.style.display = 'none';
            cueButton.style.display = 'none';
            setVisualStatus('hidden');
@@ -1361,9 +1302,8 @@
        }
 
        function startPracticeSession(questionList) {
-           if(!checkRecognitionSupport()) return;
+           if (!initSingleRecognition()) return;
            stopFireworksCelebration();
-           unlockIOSAudioHardware();
            requestWakeLock();
 
            activeQuestions = [...questionList];
@@ -1392,20 +1332,18 @@
        });
 
        cueButton.addEventListener('click', () => {
-           if(correctAnswered || cueLock || isRepeatStage) return;
+           if (correctAnswered || cueLock || isRepeatStage) return;
            cueLock = true;
-           setTimeout(() => { cueLock = false; }, 800);
-
-           unlockIOSAudioHardware();
+           setTimeout(() => { cueLock = false; }, 600);
 
            clearTimeout(timer);
            clearTimeout(speakFallbackTimer);
-           stopRecognitionCleanly();
+           stopListeningSafely();
            speakCancelToken++;
-           try{ if(synth && synth.speaking) synth.cancel(); }catch(e){}
+           try { if (synth && synth.speaking) synth.cancel(); } catch (e) {}
            isSpeakingNow = false;
            setVisualStatus('idle');
-           setTimeout(moveToNextCue, 120);
+           setTimeout(moveToNextCue, 80);
        });
 
        document.addEventListener('DOMContentLoaded', () => {
